@@ -1,6 +1,7 @@
 # Blender addon for WebGL arrays export
 # To install open Blender, Edit -> User Preferences -> Add-ons -> Install Add-on from file -> Enable Add-on
 # To export select object in Scene view, File -> Export -> WebGL arrays
+# When exporting non-mesh object, it should be converted to mesh first (Object -> Convert to -> Mesh)
 
 bl_info = {
     "name": "ExportWebGL",
