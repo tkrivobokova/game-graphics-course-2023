@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Game Graphics Course 2023</title>
+        <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+        <style>
+            body {
+                margin: 0;
+                background-color: #111111;
+                color: #aaa;
+                font-family: Roboto,sans-serif;
+            }
+            a:link {
+                color: white;
+                font-weight: bold;
+                text-decoration: none;
+            }
+
+            a:visited {
+                color: white;
+                font-weight: bold;
+                text-decoration: none;
+            }
+
+            a:hover {
+                color: white;
+                font-weight: bold;
+                text-decoration: underline;
+            }
+
+            h2 {
+                color: white;
+            }
+            header {
+                padding: 30px 30px;
+                background-color: #222222;
+                box-shadow: 0 5px 10px #010101;
+                position: fixed;
+                width: 100%;
+                top: 0;
+                font-size: 25px;
+                color: #f90;
+                font-weight: bold;
+            }
+            main {
+                padding: 100px 50px;
+            }
+            div.slides {
+                width:480px;
+                height:299px;
+                background-color:black;
+            }
+            div.desc {
+                padding-left: 20px;
+            }
+            div.topic {
+                padding-bottom: 20px;
+            }
+            div.topic > h2 {
+                border-bottom: 1px solid #444;
+                padding-bottom: 10px;
+            }
+            div.topic > div {
+                display: flex;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            Game Graphics Course 2023
+        </header>
+        <main>
+            <div class="topic">
+                <h2>Introduction</h2>      
+                <div>
+                    <div>
+                        <div class="slides">
+                            <iframe src="https://docs.google.com/presentation/d/e/2PACX-1vQSCGKuE9ZpKrT5h0m7h2hh26oAZvhQNkEL5BCYonrVtwM_RmlLPFKafSjBYjCoEgOsR2cZ_bMxoMil/embed" frameborder="0" width="480" height="299" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+                        </div>      
+                    </div>
+                    <div class="desc">
+                        Home assignment: complete setup instructions on <a target="_blank" href="https://github.com/taphos/game-graphics-course-2023">GitHub course page</a>
+                    </div>     
+                </div>
+            </div>
+            <div class="topic">
+                <h2>Rendering</h2>
+                <div>
+                    <div>
+                        <div class="slides">
+                            <iframe src="https://docs.google.com/presentation/d/e/2PACX-1vQ3T_F9cZFlFg8EyR6nxr3V6RrbXV0wl7P4TPwexz8QvIu91WFSD0MO44Zh4UglJECdIcFNMNmm37Rr/embed" frameborder="0" width="480" height="299" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+                        </div>      
+                    </div>
+                    <div class="desc">
+                        Coding demo: <a href="./demos/index.html?./simple-rendering.js">Simple rendering</a><br>
+                        Questions: <a href="https://presenter.ahaslides.com/share/rendering-quiz-1668444098303-llct58xi3h" target="_blank">Rendering quiz</a>
+                        <br><br>
+                        Home assignment:
+                        <ol>
+                            <li>Study the coding demo <a href="https://github.com/taphos/game-graphics-course-2023/blob/main/demos/simple-rendering.js">simple-rendering.js</a></li>
+                            <li>Make changes, be creative and make it look cool ;)</li>
+                            <li>Change 3D cube model with any other mesh using Blender WebGL export addon, check <a href="https://github.com/taphos/game-graphics-course-2023/blob/main/blender/export_webgl.py">blender/export_webgl.py</a></li>
+                            <li>Change object and camera transformations inside draw() function</li>
+                            <li>Change colors using bgColor and fgColor variables</li>
+                            <li>Distort object shape inside vertexShader</li>
+                            <li>Distort object colors inside fragmentShader</li>
+                        </ol>
+                    </div>     
+                </div>
+            </div>
+            <div class="topic">
+                <h2>GPU</h2>      
+                <div>
+                    <div>
+                        <div class="slides">
+                            <iframe src="https://docs.google.com/presentation/d/e/2PACX-1vS73c50y2e0lnjeSSZ2_IXYG3DN_g--VS_MkIXCl29ePA9MCJ5VnLtTX1NSvgIb0kDR5uoaCu2aq7gV/embed" frameborder="0" width="480" height="299" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+                        </div>      
+                    </div>
+                    <div class="desc">
+                        Home assignment: Find out what GPU models are inside of all your devices 
+                        <ol>
+                            <li>Mobile phone</li>
+                            <li>Tablet</li>
+                            <li>Laptop</li>
+                            <li>PC</li>
+                            <li>Gaming console</li>
+                        </ol>
+                        Figure out for each GPU you find
+                        <ol>
+                            <li>Is it integrated or dedicated?</li>
+                            <li>What kinds of graphics APIs it supports?</li>
+                            <li>What kinds of shading languages it supports?</li>
+                        </ol>
+                        Create and commit a file containing the anwers: <a href="mygpu.html" target="_blank">mygpu.html</a>
+                    </div>     
+                </div>
+            </div>
+            <div class="topic">
+                <h2>Texturing</h2>      
+                <div>
+                    <div>
+                        <div class="slides">
+                            <iframe src="https://docs.google.com/presentation/d/e/2PACX-1vT5v5SsSB5ZCpqN3PnBHr0gNxNvKRbawb2vl_1TK-U_x52-MYkyihZ9slKiod-StyhHGVi4ISDAghiU/embed" frameborder="0" width="480" height="299" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+                        </div>      
+                    </div>
+                    <div class="desc">
+                        Coding demo: <a href="./demos/index.html?./texturing.js">Texturing</a><br>
+                        Questions: <a href="https://create.kahoot.it/share/gpu-texturing/1da49f06-f4f9-4412-be68-a65de97b5731" target="_blank">GPU, Texturing quiz</a><br><br>
+                        Home assignment:
+                        <ol>
+                            <li>Study the coding demo <a href="https://github.com/taphos/game-graphics-course-2022/blob/main/demos/texturing.js">texturing.js</a></li>
+                            <li>Change cube texture with your own</li>
+                            <li>Change cubemap texture with your own (you can find one <a href="https://polyhaven.com/hdris" target="_blank">here</a> and <a href="https://jaxry.github.io/panorama-to-cubemap" target="_blank">convert it</a>)</li>
+                            <li>Combine several textures in fragment shaders</li>
+                            <li>Distort UV coordinates</li>
+                            <li>Use wrapping modes for texture tiling</li>
+                        </ol>
+                    </div>     
+                </div>
+            </div>
+        </main> 
+    </body>
+</html>

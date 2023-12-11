@@ -1,0 +1,11 @@
+{
+    "name": "game-graphics-course-2023",
+    "scripts": {
+        "serve": "http-server --cors -c-1"
+    },
+    "dependencies": {
+        "gl-matrix": "3.4.3",
+        "picogl": "0.17.9",
+        "http-server": "14.1.1"
+    }
+}
