@@ -118,7 +118,7 @@ function draw(timems) {
     rotationY += deltaTime * rotationSpeedY;
 
     mat4.perspective(projMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
-    mat4.lookAt(viewMatrix, vec3.fromValues(5, 5, 5), vec3.fromValues(-8, -1.75, 5.25), vec3.fromValues(0, 1, 0));
+    mat4.lookAt(viewMatrix, vec3.fromValues(0, 0, 6), vec3.fromValues(-2 * app.width / app.height, 2, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
     mat4.fromXRotation(rotateXMatrix, rotationX); 
