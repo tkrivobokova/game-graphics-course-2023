@@ -46,9 +46,9 @@ let vertexShader = `
     
     void main()
     {
-        gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);
+        gl_Position = modelViewProjectionMatrix * vec4(position, 2.0);
         vec3 viewNormal = (modelViewMatrix * vec4(normal, 0.0)).xyz;
-        color = mix(bgColor * 0.8, fgColor, viewNormal.z) + pow(viewNormal.z, 20.0);
+        color = mix(bgColor * 0.8, fgColor, viewNormal.z) + (viewNormal.z > 0.0 ? pow(viewNormal.z, 20.0) : 0.0);
     }
 `;
 
@@ -76,8 +76,8 @@ let fragmentShader = `
 // **             Application processing               **
 // ******************************************************
 
-let bgColor = vec4.fromValues(1.0, 0.2, 0.3, 1.0);
-let fgColor = vec4.fromValues(1.0, 0.9, 0.5, 1.0);
+let bgColor = vec4.fromValues(1.0, 0.75, 0.8, 0.5);
+let fgColor = vec4.fromValues(0.4, 0.98, 0.55, 1.0);
 
 
 app.clearColor(bgColor[0], bgColor[1], bgColor[2], bgColor[3])
@@ -104,15 +104,25 @@ let drawCall = app.createDrawCall(program, vertexArray)
     .uniform("bgColor", bgColor)
     .uniform("fgColor", fgColor);
 
+let previousTime = 0;
+let rotationX = 0;
+let rotationY = 0;
+
 function draw(timems) {
     const time = timems * 0.001;
+    const deltaTime = time - previousTime;
+    previousTime = time;
+    const rotationSpeedX = Math.sin(time) * 0.5 + 1.0;
+    const rotationSpeedY= Math.sin(time);
+    rotationX += deltaTime * rotationSpeedX;
+    rotationY += deltaTime * rotationSpeedY;
 
     mat4.perspective(projMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
-    mat4.lookAt(viewMatrix, vec3.fromValues(3, 0, 2), vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+    mat4.lookAt(viewMatrix, vec3.fromValues(5, 5, 5), vec3.fromValues(-8, -1.75, 5.25), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
-    mat4.fromXRotation(rotateXMatrix, time * 0.1136);
-    mat4.fromYRotation(rotateYMatrix, time * 0.2235);
+    mat4.fromXRotation(rotateXMatrix, rotationX); 
+    mat4.fromYRotation(rotateYMatrix, rotationY);
     mat4.multiply(modelMatrix, rotateXMatrix, rotateYMatrix);
 
     mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
