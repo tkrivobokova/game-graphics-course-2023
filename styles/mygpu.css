@@ -1,3 +1,29 @@
-p {
-    color: blue;
+body {
+    margin: 0;
+}
+.table {
+    display: flex;
+    flex-direction: column;
+    max-width: 75vw;
+    margin-left: auto;
+    margin-right: auto;
+}
+.table-content {
+    display: flex;
+    flex-direction: column;
+}
+.table-content-row {
+    display: flex;
+    flex-direction: row;
+}
+.table-row {
+    display: flex;
+    flex: 1;
+    box-sizing: border-box;
+}
+.table-header-cell, .table-cell {
+    flex: 1;
+    text-align: center;
+    border-style: groove;
+    border-color: black;
 }
