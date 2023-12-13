@@ -1,5 +1,13 @@
 body {
     margin: 0;
+    background-color: #fff7ff;
+    color: #331E38;
+    font-family: Garamond, Arial, Helvetica, sans-serif;
+}
+.page-label {
+    text-align: center;
+    font-weight: 700;
+    display: block;
 }
 .table {
     display: flex;
@@ -8,9 +16,15 @@ body {
     margin-left: auto;
     margin-right: auto;
 }
+.table-header {
+    font-size: larger;
+    font-weight: bold;
+}
 .table-content {
     display: flex;
     flex-direction: column;
+    font-size: large;
+    font-weight: normal;
 }
 .table-content-row {
     display: flex;
@@ -25,5 +39,34 @@ body {
     flex: 1;
     text-align: center;
     border-style: groove;
-    border-color: black;
+    border-color: #DFF3E4;
+    background-color: #FFFBFE;
 }
+.animation-mascot {
+    width: 100vw;
+    height: auto;
+}
+.mascot {
+    position: fixed;
+    right: -20%;
+    width: 20%;
+    height: auto;
+    animation: moveLeft 5s linear;
+}
+@keyframes moveLeft {
+    0% {
+      transform: translateX(0) translateY(0%);
+    }
+    25% {
+        transform: translateX(calc(-25% - 25vw)) translateY(-5vh);
+    }
+    50% {
+        transform: translateX(calc(-50% - 50vw)) translateY(5vh);
+    }
+    75% {
+        transform: translateX(calc(-75% - 75vw)) translateY(-5vh);
+    }
+    100% {
+      transform: translateX(calc(-100% - 100vw)) translateY(5vh);
+    }
+  }
