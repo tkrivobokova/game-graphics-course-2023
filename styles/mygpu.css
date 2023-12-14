@@ -46,8 +46,9 @@ body {
     width: 80vw;
     height: auto;
     top: 0;
+    opacity: 0;
     z-index: -1;
-    animation: rotateRainbow 5s linear;
+    animation: rotateRainbow 20s linear;
 }
 .table {
     display: flex;
@@ -109,26 +110,32 @@ body {
       transform: translateX(0) translateY(0%);
     }
     25% {
-        transform: translateX(calc(-25% - 25vw)) translateY(-5vh);
+        transform: translateX(calc(-25% - 25vw)) translateY(-25vh);
     }
     50% {
         transform: translateX(calc(-50% - 50vw)) translateY(5vh);
     }
     75% {
-        transform: translateX(calc(-75% - 75vw)) translateY(-5vh);
+        transform: translateX(calc(-75% - 75vw)) translateY(-25vh);
     }
     100% {
-      transform: translateX(calc(-100% - 100vw)) translateY(5vh);
+        transform: translateX(calc(-100% - 100vw)) translateY(5vh);
     }
   }
 @keyframes rotateRainbow {
-    from {
+    0% {
         opacity: 0;
         transform: rotate(-180deg);
     }
-    to {
+    25% {
         opacity: 1;
         transform:  rotate(0deg);
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
     }
 }
 @keyframes showText {
@@ -149,7 +156,7 @@ body {
     0% {
         opacity: 0;
     }
-    99% {
+    90% {
         opacity: 0;
     }
     100% {

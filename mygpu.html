@@ -50,7 +50,27 @@
         </div>
     </div>
     <div class="animation-mascot">
-        <img src="images/alpaca.png" alt="Cute alpaca" class="mascot">
+        <img id="alpaca" alt="Cute alpaca" class="mascot">
     </div>
+
+    <script>
+        const alpaca = document.getElementById('alpaca');
+        const images = ['/images/alpaca.png', '/images/alpaca_2.png']; 
+        let currentIndex = 0;
+        let iterationCount = 0;
+        const maxIterationCount = 15;
+        let intervalTime = 1000;
+
+        function changeImage() {
+            alpaca.src = images[currentIndex];
+            currentIndex = (currentIndex + 1) % images.length;
+            iterationCount++;
+
+            if (iterationCount === maxIterationCount) {
+                clearInterval(intervalId);
+            }
+        }
+        const intervalId = setInterval(changeImage, intervalTime); 
+      </script>
 </body>
 </html>
