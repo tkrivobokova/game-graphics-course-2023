@@ -1,10 +1,12 @@
+const rainbow = document.getElementById('rainbow');
 const alpaca = document.getElementById('alpaca');
-const pikachu = document.getElementById('pikachu')
+const pikachu = document.getElementById('pikachu');
 const images = ['../images/alpaca.png', '../images/alpaca_2.png'];
 const maxIterationCount = 25;
 const helperBottomLocation = 20;
 const speedStep = 0.1;
 const bounceBottomLocation = 10;
+const duration = 20000;
 
 let currentIndex = 0;
 let iterationCount = 0;
@@ -28,6 +30,7 @@ function changeImage() {
 
 // pikachu fly up
 function showHelperPicture() {
+    console.log(helperTimeout)
     currentBottomLocation += speedStep;
     if (currentBottomLocation < helperBottomLocation) {
         pikachu.style.bottom = currentBottomLocation + '%';
@@ -59,14 +62,15 @@ function hideHelperPicture() {
     if (currentBottomLocation > -40) {
         pikachu.style.bottom = currentBottomLocation + '%';
         setTimeout(hideHelperPicture, helperSpeedTimeout);
+    } else {
+        clearTimeout(helperTimeout);
     }
 }
 
 pikachu.addEventListener('click', function() {
     hideHelperPicture();
     showHelper = false;
-    clearTimeout(helperTimeout);
 });
 
 const intervalId = setInterval(changeImage, intervalTime);
-helperTimeout = setTimeout(showHelperPicture, 21000);
+if(helperTimeout !== 0) helperTimeout = setTimeout(showHelperPicture, 21000);

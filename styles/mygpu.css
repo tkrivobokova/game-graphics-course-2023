@@ -109,6 +109,9 @@ body {
     bottom: -40%;
     position: fixed;
 }
+.helper-text {
+    opacity: 0;
+}
 
 /* keyframes for animations */
 @keyframes moveLeft {
@@ -116,13 +119,13 @@ body {
       transform: translateX(0) translateY(0%);
     }
     25% {
-        transform: translateX(calc(-25% - 25vw)) translateY(-25vh);
+        transform: translateX(calc(-25% - 25vw)) translateY(-10vh);
     }
     50% {
         transform: translateX(calc(-50% - 50vw)) translateY(5vh);
     }
     75% {
-        transform: translateX(calc(-75% - 75vw)) translateY(-25vh);
+        transform: translateX(calc(-75% - 75vw)) translateY(-10vh);
     }
     100% {
         transform: translateX(calc(-100% - 100vw)) translateY(5vh);

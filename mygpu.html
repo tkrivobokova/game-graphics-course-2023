@@ -13,7 +13,7 @@
             <div class="animation-text-label">Home assignment</div>
             <div class="animation-text-description">Find out what GPU models are inside of all your devices</div>
         </div>
-        <img src="/images/rainbow.png" alt="rainbow image" class="rainbow">
+        <img id="rainbow" src="/images/rainbow.png" alt="rainbow image" class="rainbow">
     </div>   
     <div class="table content">
         <div class="table-row table-header">
@@ -53,57 +53,9 @@
         <img id="alpaca" alt="Cute alpaca" class="mascot">
     </div>
     <div class="animation-helper">
-        <img id="pikachu" src="/images/pikachu.png" alt="pikachu with baloons" class="pikachu">
+        <img id="pikachu" src="/images/pikachu.png" alt="pikachu with baloons" class="pikachu" onclick="hideHelperPicture()">
+        <div class="helper-text">Lorem, ipsum dolor sit amet consectetur adipisicing elit. Delectus, vel, minima soluta officiis ipsa accusamus inventore eligendi dignissimos magni voluptates assumenda illum cumque iste aliquam sit dolore illo beatae autem.</div>
     </div>
-
-    <script>
-        const alpaca = document.getElementById('alpaca');
-        const pikachu = document.getElementById('pikachu')
-        const images = ['/images/alpaca.png', '/images/alpaca_2.png']; 
-        const maxIterationCount = 25;
-        const helperBottomLocation = 20;
-        const speedStep = 0.1;
-        const bounceBottomLocation = 10;
-        
-        let currentIndex = 0;
-        let iterationCount = 0;
-        let intervalTime = 700;
-        let currentBottomLocation = -40;
-        let helperSpeedTimeout = 5;
-
-        function changeImage() {
-            alpaca.src = images[currentIndex];
-            currentIndex = (currentIndex + 1) % images.length;
-            iterationCount++;
-
-            if (iterationCount === maxIterationCount) {
-                clearInterval(intervalId);
-            }
-        }
-        const intervalId = setInterval(changeImage, intervalTime); 
-
-        function showHelperPicture() {
-            currentBottomLocation += speedStep;
-            if (currentBottomLocation < helperBottomLocation) {
-                pikachu.style.bottom = currentBottomLocation + '%';
-                setTimeout(showHelperPicture, helperSpeedTimeout);
-            } 
-            else if (currentBottomLocation >= helperBottomLocation) {
-                helperSpeedTimeout = 20;
-                startBouncing();
-            }
-        }
-        function startBouncing() {
-            currentBottomLocation -= speedStep;
-            if(currentBottomLocation > bounceBottomLocation) {
-                pikachu.style.bottom = currentBottomLocation + '%';
-                setTimeout(startBouncing, helperSpeedTimeout)
-            }
-            else if (currentBottomLocation <= bounceBottomLocation) {
-                showHelperPicture();
-            }
-        }
-        const helperTimeout = setTimeout(showHelperPicture, 21000)
-      </script>
+    <script src="scripts/mygpu.js" defer></script>
 </body>
 </html>
