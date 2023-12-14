@@ -103,6 +103,12 @@ body {
     animation-duration: 20s;
     animation-name: showContent;
 }
+.pikachu {
+    width: auto;
+    height: 40%;
+    bottom: -40%;
+    position: fixed;
+}
 
 /* keyframes for animations */
 @keyframes moveLeft {

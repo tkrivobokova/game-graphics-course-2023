@@ -52,14 +52,24 @@
     <div class="animation-mascot">
         <img id="alpaca" alt="Cute alpaca" class="mascot">
     </div>
+    <div class="animation-helper">
+        <img id="pikachu" src="/images/pikachu.png" alt="pikachu with baloons" class="pikachu">
+    </div>
 
     <script>
         const alpaca = document.getElementById('alpaca');
+        const pikachu = document.getElementById('pikachu')
         const images = ['/images/alpaca.png', '/images/alpaca_2.png']; 
+        const maxIterationCount = 25;
+        const helperBottomLocation = 20;
+        const speedStep = 0.1;
+        const bounceBottomLocation = 10;
+        
         let currentIndex = 0;
         let iterationCount = 0;
-        const maxIterationCount = 15;
-        let intervalTime = 1000;
+        let intervalTime = 700;
+        let currentBottomLocation = -40;
+        let helperSpeedTimeout = 5;
 
         function changeImage() {
             alpaca.src = images[currentIndex];
@@ -71,6 +81,29 @@
             }
         }
         const intervalId = setInterval(changeImage, intervalTime); 
+
+        function showHelperPicture() {
+            currentBottomLocation += speedStep;
+            if (currentBottomLocation < helperBottomLocation) {
+                pikachu.style.bottom = currentBottomLocation + '%';
+                setTimeout(showHelperPicture, helperSpeedTimeout);
+            } 
+            else if (currentBottomLocation >= helperBottomLocation) {
+                helperSpeedTimeout = 20;
+                startBouncing();
+            }
+        }
+        function startBouncing() {
+            currentBottomLocation -= speedStep;
+            if(currentBottomLocation > bounceBottomLocation) {
+                pikachu.style.bottom = currentBottomLocation + '%';
+                setTimeout(startBouncing, helperSpeedTimeout)
+            }
+            else if (currentBottomLocation <= bounceBottomLocation) {
+                showHelperPicture();
+            }
+        }
+        const helperTimeout = setTimeout(showHelperPicture, 21000)
       </script>
 </body>
 </html>
