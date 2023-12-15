@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/images/pikachu.png">
     <title>My GPU</title>
     <link rel="stylesheet" href="styles/mygpu.css">
 </head>
@@ -13,11 +14,15 @@
             <div class="animation-text-label">Home assignment</div>
             <div class="animation-text-description">Find out what GPU models are inside of all your devices</div>
         </div>
-        <img id="rainbow" src="/images/rainbow.png" alt="rainbow image" class="rainbow">
+        <div class="animation-rotation">
+            <img id="rainbow" src="/images/rainbow.png" alt="rainbow image" class="rainbow">
+            <div class="rotation-helper"></div>
+        </div>
     </div>   
     <div class="table content">
         <div class="table-row table-header">
             <div class="table-header-cell">Device</div>
+            <div class="table-header-cell">GPU</div>
             <div class="table-header-cell">Integrated or dedicated</div>
             <div class="table-header-cell">Graphics APIs supported</div>
             <div class="table-header-cell">Shaded languages supported</div>
@@ -25,24 +30,28 @@
         <div class="table-content">
             <div class="table-row table-content-row">
                 <div class="table-cell" data-value="mobile">Mobile phone</div>
-                <div class="table-cell">TODO</div>
-                <div class="table-cell">TODO</div>
-                <div class="table-cell">TODO</div>
+                <div class="table-cell">Qualcomm Adreno 619</div>
+                <div class="table-cell">Integrated</div>
+                <div class="table-cell">DirectX, OpenGL, Vulkan</div>
+                <div class="table-cell">HLSL, GLSL, SPIR-V</div>
             </div>
             <div class="table-row table-content-row">
                 <div class="table-cell" data-value="laptop1">Laptop 1</div>
-                <div class="table-cell">TODO</div>
-                <div class="table-cell">TODO</div>
-                <div class="table-cell">TODO</div>
+                <div class="table-cell">AMD Radeon PRO Graphics</div>
+                <div class="table-cell">Integrated</div>
+                <div class="table-cell">DirectX, OpenGL, Vulkan</div>
+                <div class="table-cell">HLSL, GLSL, SPIR-V</div>
             </div>
             <div class="table-row table-content-row">
                 <div class="table-cell" data-value="laptop2">Laptop 2</div>
-                <div class="table-cell">TODO</div>
-                <div class="table-cell">TODO</div>
-                <div class="table-cell">TODO</div>
+                <div class="table-cell">Apple M1</div>
+                <div class="table-cell">Integrated</div>
+                <div class="table-cell">Metal</div>
+                <div class="table-cell">MSL</div>
             </div>
             <div class="table-row table-content-row">
                 <div class="table-cell" data-value="pc">PC</div>
+                <div class="table-cell">TODO</div>
                 <div class="table-cell">TODO</div>
                 <div class="table-cell">TODO</div>
                 <div class="table-cell">TODO</div>

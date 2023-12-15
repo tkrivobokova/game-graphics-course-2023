@@ -31,14 +31,14 @@ body {
     font-size: 9vw;
     font-weight: bold;
     animation-delay: 5s;
-    animation-duration: 15s;
+    animation-duration: 10s;
     animation-name: showText;
 }
 .animation-text-description {
     opacity: 0;
     font-size: 4vw;
     animation-delay: 6s;
-    animation-duration: 14s;
+    animation-duration: 9s;
     animation-name: showText;
 }
 .rainbow {
@@ -48,7 +48,7 @@ body {
     top: 0;
     opacity: 0;
     z-index: -1;
-    animation: rotateRainbow 20s linear;
+    animation: rotateRainbow 15s linear;
 }
 .table {
     display: flex;
@@ -100,7 +100,7 @@ body {
 }
 .content {
     opacity: 1;
-    animation-duration: 20s;
+    animation-duration: 15s;
     animation-name: showContent;
 }
 .pikachu {
