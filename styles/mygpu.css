@@ -1,16 +1,13 @@
 body {
     margin: 0;
+    padding: 0;
     background-color: #fff7ff;
     color: #331E38;
     font-family: Garamond, Arial, Helvetica, sans-serif;
     overflow: hidden;
 }
-.page-label {
-    text-align: center;
-    font-size: 2.5vw;
-    font-weight: bold;
-    display: block;
-}
+
+/* styles for rainbow */
 .animation-rainbow {
     height: 100vh;
     width: 100vw;
@@ -19,6 +16,25 @@ body {
     flex-direction: column;
     align-items: center;
 }
+.rainbow {
+    position: fixed;
+    width: 80vw;
+    height: auto;
+    top: 0;
+    z-index: -1;
+    transform: rotate(180deg);
+}
+.animation-rotation {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 80vw;
+    height: 100vh;
+    opacity: 0;
+    z-index: -1;
+    animation: rotateRainbow 15s linear;
+}
+
+/* styles for intro text */ 
 .animation-text {
     text-align: center;
     display: flex;
@@ -41,14 +57,29 @@ body {
     animation-duration: 9s;
     animation-name: showText;
 }
-.rainbow {
-    position: fixed;
-    width: 80vw;
+
+/* styles for mascot */ 
+.animation-mascot {
+    width: 100vw;
     height: auto;
-    top: 0;
-    opacity: 0;
-    z-index: -1;
-    animation: rotateRainbow 15s linear;
+}
+.mascot {
+    position: fixed;
+    right: -20%;
+    width: 20%;
+    height: auto;
+    animation-delay: 8s;
+    animation-name: moveLeft;
+    animation-duration: 5s;
+    animation-timing-function: linear;
+}
+
+/* styles for main content */ 
+.page-label {
+    text-align: center;
+    font-size: 2.5vw;
+    font-weight: bold;
+    display: block;
 }
 .table {
     display: flex;
@@ -84,31 +115,21 @@ body {
     background-color: #FFFBFE;
     font-size: 1.5vw;
 }
-.animation-mascot {
-    width: 100vw;
-    height: auto;
-}
-.mascot {
-    position: fixed;
-    right: -20%;
-    width: 20%;
-    height: auto;
-    animation-delay: 8s;
-    animation-name: moveLeft;
-    animation-duration: 5s;
-    animation-timing-function: linear;
-}
 .content {
     opacity: 1;
     animation-duration: 15s;
     animation-name: showContent;
 }
+
+/* styles for helper image */ 
 .pikachu {
     width: auto;
     height: 40%;
     bottom: -40%;
     position: fixed;
 }
+
+/* styles for helper text */ 
 .helper-text {
     opacity: 0;
 }
@@ -134,17 +155,19 @@ body {
 @keyframes rotateRainbow {
     0% {
         opacity: 0;
-        transform: rotate(-180deg);
+        transform: rotate(0deg);
     }
     25% {
         opacity: 1;
-        transform:  rotate(0deg);
+        transform: rotate(180deg);
     }
     90% {
         opacity: 1;
+        transform: rotate(180deg);
     }
     100% {
         opacity: 0;
+        transform: rotate(120deg);
     }
 }
 @keyframes showText {
