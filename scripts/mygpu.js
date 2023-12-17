@@ -8,19 +8,21 @@ const maxIterationCount = 25;
 const helperBottomLocation = 10;
 const speedStep = 0.1;
 const bounceBottomLocation = 2.5;
+const initialBottomLocation = -40;
 
 let currentIndex = 0;
 let iterationCount = 0;
 let intervalTime = 700;
-let currentBottomLocation = -40;
+let currentBottomLocation = initialBottomLocation;
 let helperSpeedTimeout = 5;
 let showHelper = false;
 let helperShown = false;
+let helperImageHidden = false;
 
 let helperTimeout;
 
 // change alpaca's legs
-function changeImage() {
+function changeMascotImage() {
     alpaca.src = images[currentIndex];
     currentIndex = (currentIndex + 1) % images.length;
     iterationCount++;
@@ -31,59 +33,62 @@ function changeImage() {
 }
 
 // pikachu fly up
-function showHelperPicture() {
+function helperImageMoveUp() {
     currentBottomLocation += speedStep;
-    if (currentBottomLocation < helperBottomLocation) {
-        pikachu.style.bottom = currentBottomLocation + '%';
-        setTimeout(showHelperPicture, helperSpeedTimeout);
-    }
-    else if (currentBottomLocation >= helperBottomLocation) {
-        
-        helperSpeedTimeout = 20;
-
-        startBouncing();
+    if (!helperImageHidden) {
+        if (currentBottomLocation < helperBottomLocation) {
+            pikachu.style.bottom = currentBottomLocation + '%';
+            setTimeout(helperImageMoveUp, helperSpeedTimeout);
+        }
+        else if (currentBottomLocation >= helperBottomLocation) {
+            helperSpeedTimeout = 20;
+            helperImageBounce();
+        }
     }
 }
 
 // pikachu bounce
-function startBouncing() {
+function helperImageBounce() {
     currentBottomLocation -= speedStep;
     if (currentBottomLocation > bounceBottomLocation) {
         pikachu.style.bottom = currentBottomLocation + '%';
-        setTimeout(startBouncing, helperSpeedTimeout);
+        setTimeout(helperImageBounce, helperSpeedTimeout);
     }
     else if (currentBottomLocation <= bounceBottomLocation) {
-        
         showHelper = true;
         if(showHelper && !helperShown) {
             showHelperText();
         }
-        showHelperPicture();
+        helperImageMoveUp();
     }
 }
 
 // hide pikachu on click 
 function hideHelper() {
-    helperText.style.display = 'none';
     helperSpeedTimeout = 5;
     currentBottomLocation -= speedStep;
-    if (currentBottomLocation > -40) {
+    if (currentBottomLocation > initialBottomLocation) {
         pikachu.style.bottom = currentBottomLocation + '%';
-        setTimeout(hideHelperPicture, helperSpeedTimeout);
+        setTimeout(hideHelper, helperSpeedTimeout);
     } else {
+        helperImageHidden = true;
         pikachu.style.display = 'none';
     }
+    
 }
 
+// show helper text
 function showHelperText() {
     helperShown = true;
     helperText.style.opacity = 1;
 }
 
-pikachu.addEventListener('click', function() {
-    hideHelper();
+hideButton.addEventListener('click', function() {
+    helperText.style.display = 'none';
     showHelper = false;
-});
+    hideHelper();
+})
 
-const intervalId = setInterval(changeImage, intervalTime);
-helperTimeout = setTimeout(showHelperPicture, 16000);
+
+const intervalId = setInterval(changeMascotImage, intervalTime);
+helperTimeout = setTimeout(helperImageMoveUp, 16000);
