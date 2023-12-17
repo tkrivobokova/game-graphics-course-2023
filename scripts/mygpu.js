@@ -1,6 +1,8 @@
 const rainbow = document.getElementById('rainbow');
 const alpaca = document.getElementById('alpaca');
 const pikachu = document.getElementById('pikachu');
+const helperText = document.getElementById('helper-text');
+const hideButton = document.getElementById('hide-button');
 const images = ['../images/alpaca.png', '../images/alpaca_2.png'];
 const maxIterationCount = 25;
 const helperBottomLocation = 10;
@@ -13,6 +15,7 @@ let intervalTime = 700;
 let currentBottomLocation = -40;
 let helperSpeedTimeout = 5;
 let showHelper = false;
+let helperShown = false;
 
 let helperTimeout;
 
@@ -35,8 +38,9 @@ function showHelperPicture() {
         setTimeout(showHelperPicture, helperSpeedTimeout);
     }
     else if (currentBottomLocation >= helperBottomLocation) {
-        showHelper = true;
+        
         helperSpeedTimeout = 20;
+
         startBouncing();
     }
 }
@@ -49,12 +53,18 @@ function startBouncing() {
         setTimeout(startBouncing, helperSpeedTimeout);
     }
     else if (currentBottomLocation <= bounceBottomLocation) {
+        
+        showHelper = true;
+        if(showHelper && !helperShown) {
+            showHelperText();
+        }
         showHelperPicture();
     }
 }
 
 // hide pikachu on click 
-function hideHelperPicture() {
+function hideHelper() {
+    helperText.style.display = 'none';
     helperSpeedTimeout = 5;
     currentBottomLocation -= speedStep;
     if (currentBottomLocation > -40) {
@@ -65,11 +75,15 @@ function hideHelperPicture() {
     }
 }
 
-pikachu.addEventListener('click', function() {
-    hideHelperPicture();
-    showHelper = false;
+function showHelperText() {
+    helperShown = true;
+    helperText.style.opacity = 1;
+}
 
+pikachu.addEventListener('click', function() {
+    hideHelper();
+    showHelper = false;
 });
 
 const intervalId = setInterval(changeImage, intervalTime);
-if(helperTimeout !== 0) helperTimeout = setTimeout(showHelperPicture, 16000);
+helperTimeout = setTimeout(showHelperPicture, 16000);

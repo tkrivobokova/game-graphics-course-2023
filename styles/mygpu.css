@@ -131,13 +131,41 @@ body {
 
 /* styles for helper text */ 
 .helper-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: baseline;
     opacity: 0;
+    left: 20vw;
+    height: 15vh;
+    position: fixed;
+    width: 10vw;
+    margin-top: 50px;
+    background-color: #FFFBFE;
+    padding: 20px;
+    border-radius: 20%;
+    border-color: #DFF3E4;
+    border-style: groove;
+    text-align: left;
+}
+.helper-hide {
+    position: fixed;
+    background: none;
+    border: none;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.helper-button {
+    height: auto;
+    width: auto;
+    margin-left: auto;
+    margin-right: 50px;
 }
 
 /* keyframes for animations */
 @keyframes moveLeft {
     0% {
-      transform: translateX(0) translateY(0%);
+      transform: translateX(0) translateY(-20%);
     }
     25% {
         transform: translateX(calc(-25% - 25vw)) translateY(-10vh);

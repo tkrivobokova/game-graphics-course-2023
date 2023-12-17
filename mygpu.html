@@ -61,8 +61,13 @@
         <img id="alpaca" alt="Cute alpaca" class="mascot">
     </div>
     <div class="animation-helper">
-        <img id="pikachu" src="/images/pikachu.png" alt="pikachu with baloons" class="pikachu" onclick="hideHelperPicture()">
-        <div class="helper-text">Lorem, ipsum dolor sit amet consectetur adipisicing elit. Delectus, vel, minima soluta officiis ipsa accusamus inventore eligendi dignissimos magni voluptates assumenda illum cumque iste aliquam sit dolore illo beatae autem.</div>
+        <img id="pikachu" src="/images/pikachu.png" alt="pikachu with baloons" class="pikachu">
+        <div id="helper-text" class="helper-text">
+            <div class="">Hover on the device to get its model</div>
+            <div class="helper-button">
+                <button id="hide-button" class="helper-hide" onclick="hideHelper()">Hide</button>
+            </div>
+        </div>
     </div>
     <script src="scripts/mygpu.js" defer></script>
 </body>
