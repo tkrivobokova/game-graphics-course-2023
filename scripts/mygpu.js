@@ -3,44 +3,47 @@ const alpaca = document.getElementById('alpaca');
 const pikachu = document.getElementById('pikachu');
 const helperText = document.getElementById('helper-text');
 const hideButton = document.getElementById('hide-button');
-const images = ['../images/alpaca.png', '../images/alpaca_2.png'];
-const maxIterationCount = 25;
-const helperBottomLocation = 10;
+const mascotImages = ['../images/alpaca.png', '../images/alpaca_2.png'];
+
+const helperTopLocation = 5;
 const speedStep = 0.1;
-const bounceBottomLocation = 2.5;
+const bounceBottomLocation = 0;
 const initialBottomLocation = -40;
 
-let currentIndex = 0;
-let iterationCount = 0;
-let intervalTime = 700;
-let currentBottomLocation = initialBottomLocation;
 let helperSpeedTimeout = 5;
 let showHelper = false;
 let helperShown = false;
 let helperImageHidden = false;
+let currentBottomLocation = initialBottomLocation;
 
 let helperTimeout;
 
-// change alpaca's legs
-function changeMascotImage() {
-    alpaca.src = images[currentIndex];
-    currentIndex = (currentIndex + 1) % images.length;
-    iterationCount++;
+function runMascotAnimationScript() {
+    const intervalTime = 600;
+    const maxIteration = 30;
 
-    if (iterationCount === maxIterationCount) {
-        clearInterval(intervalId);
-    }
-}
+    let iteration = 0;
+
+    const intervalId = setInterval(() => {
+        if (maxIteration <= iteration) {
+            clearInterval(intervalId);
+        }
+        // change alpaca's legs
+        alpaca.src = mascotImages[iteration % mascotImages.length];
+
+        iteration++;
+    }, intervalTime);
+};
 
 // pikachu fly up
 function helperImageMoveUp() {
     currentBottomLocation += speedStep;
     if (!helperImageHidden) {
-        if (currentBottomLocation < helperBottomLocation) {
+        if (currentBottomLocation < helperTopLocation) {
             pikachu.style.bottom = currentBottomLocation + '%';
             setTimeout(helperImageMoveUp, helperSpeedTimeout);
         }
-        else if (currentBottomLocation >= helperBottomLocation) {
+        else if (currentBottomLocation >= helperTopLocation) {
             helperSpeedTimeout = 20;
             helperImageBounce();
         }
@@ -89,6 +92,5 @@ hideButton.addEventListener('click', function() {
     hideHelper();
 })
 
-
-const intervalId = setInterval(changeMascotImage, intervalTime);
+runMascotAnimationScript();
 helperTimeout = setTimeout(helperImageMoveUp, 16000);
