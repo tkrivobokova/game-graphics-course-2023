@@ -5,9 +5,9 @@ const helperText = document.getElementById('helper-text');
 const hideButton = document.getElementById('hide-button');
 const mascotImages = ['../images/alpaca.png', '../images/alpaca_2.png'];
 
-const helperTopLocation = 5;
+const helperTopLocation = 15;
 const speedStep = 0.1;
-const bounceBottomLocation = 0;
+const bounceBottomLocation = 5;
 const initialBottomLocation = -40;
 
 let helperSpeedTimeout = 5;
@@ -44,7 +44,7 @@ function helperImageMoveUp() {
             setTimeout(helperImageMoveUp, helperSpeedTimeout);
         }
         else if (currentBottomLocation >= helperTopLocation) {
-            helperSpeedTimeout = 20;
+            helperSpeedTimeout = 25;
             helperImageBounce();
         }
     }
