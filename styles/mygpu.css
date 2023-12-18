@@ -40,7 +40,10 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    align-items: center;
     height: 70vh;
+    padding: 10px;
+    max-width: 90vw;
 }
 .animation-text-label {
     opacity: 0;
@@ -115,7 +118,7 @@ body {
     border-color: #DFF3E4;
     background-color: #FFFBFE;
     font-size: 1.5vw;
-    padding: 2px;
+    padding: 5px;
 }
 .content {
     opacity: 1;
@@ -161,10 +164,11 @@ body {
 
 /* styles for helper image */ 
 .pikachu {
-    width: auto;
-    height: 40%;
-    bottom: -40%;
+    width: 15vw;
+    height: auto;
+    bottom: -40vh;
     position: fixed;
+    margin: 10px;
 }
 
 /* styles for helper text */ 
@@ -174,11 +178,14 @@ body {
     justify-content: space-around;
     align-items: baseline;
     opacity: 0;
-    left: 20vw;
-    height: 15vh;
+    left: 15vw;
+    height: auto;
+    max-height: 20vh;
     position: fixed;
-    width: 9vw;
-    margin-top: 50px;
+    width: 10vw;
+    max-width: 15vw;
+    margin-top: 40px;
+    margin-left: 10px;
     background-color: #FFFBFE;
     padding: 15px;
     border-radius: 20%;
@@ -188,7 +195,7 @@ body {
     font-size: 1.3vw;
 }
 .helper-hide {
-    position: fixed;
+
     background: none;
     border: none;
     text-decoration: underline;
@@ -200,25 +207,24 @@ body {
     height: auto;
     width: auto;
     margin-left: auto;
-    margin-right: 40px;
 }
 
 /* keyframes for animations */
 @keyframes moveLeft {
     0% {
-      transform: translateX(0) translateY(-20%);
+      transform: translateX(0) translateY(-10vh);
     }
     25% {
-        transform: translateX(calc(-25% - 25vw)) translateY(-10vh);
+        transform: translateX(calc(-25% - 25vw)) translateY(0vh);
     }
     50% {
-        transform: translateX(calc(-50% - 50vw)) translateY(5vh);
+        transform: translateX(calc(-50% - 50vw)) translateY(-10vh);
     }
     75% {
-        transform: translateX(calc(-75% - 75vw)) translateY(-10vh);
+        transform: translateX(calc(-75% - 75vw)) translateY(0vh);
     }
     100% {
-        transform: translateX(calc(-100% - 100vw)) translateY(5vh);
+        transform: translateX(calc(-100% - 100vw)) translateY(-10vh);
     }
   }
 @keyframes rotateRainbow {
