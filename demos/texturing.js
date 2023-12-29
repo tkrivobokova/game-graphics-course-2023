@@ -5,10 +5,10 @@
 // *********************************************************************************************************************
 
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
-import {mat4, vec3} from "../node_modules/gl-matrix/esm/index.js";
+import { mat4, vec3 } from "../node_modules/gl-matrix/esm/index.js";
 
-import {positions, uvs, indices} from "../blender/cube.js";
-import {positions as planePositions, indices as planeIndices} from "../blender/plane.js";
+import { positions, uvs, indices } from "../blender/cube.js";
+import { positions as planePositions, indices as planeIndices } from "../blender/plane.js";
 
 // language=GLSL
 let fragmentShader = `
@@ -103,10 +103,10 @@ async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
 }
 
-const tex = await loadTexture("abstract.jpg");
+const tex = await loadTexture("steel.jpg");
 let drawCall = app.createDrawCall(program, vertexArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
-        magFilter: PicoGL.LINEAR,
+        magFilter: PicoGL.NEAREST,
         minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
         maxAnisotropy: 10,
         wrapS: PicoGL.REPEAT,
@@ -123,16 +123,28 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
         posZ: await loadTexture("stormydays_rt.png")
     }));
 
+let previousTime = 0;
+let rotationX = 0;
+let rotationY = 0;
+let rotationSpeed = 0;//Math.floor(Math.random() * 10);
+
 function draw(timems) {
     const time = timems * 0.001;
+    const deltaTime = time - previousTime;
+    previousTime = time;
+    let rotationSpeedX = Math.sin(time) * rotationSpeed;
+    console.log(rotationSpeedX);
+    let rotationSpeedY= Math.sin(time);
+    rotationX += deltaTime * rotationSpeedX;
+    rotationY += deltaTime * rotationSpeedY;
 
     mat4.perspective(projMatrix, Math.PI / 2, app.width / app.height, 0.1, 100.0);
     let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
     mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
-    mat4.fromXRotation(rotateXMatrix, time * 0.1136);
-    mat4.fromZRotation(rotateYMatrix, time * 0.2235);
+    mat4.fromXRotation(rotateXMatrix, rotationX);
+    mat4.fromZRotation(rotateYMatrix, rotationY);
     mat4.multiply(modelMatrix, rotateXMatrix, rotateYMatrix);
 
     mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
@@ -152,8 +164,36 @@ function draw(timems) {
     app.enable(PicoGL.DEPTH_TEST);
     app.enable(PicoGL.CULL_FACE);
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
-    drawCall.draw();
+    drawCall.draw(); //ask why without a parameter
 
     requestAnimationFrame(draw);
 }
 requestAnimationFrame(draw);
+
+
+/*
+---------Plan---------
+
+1. define the walls (based on the screen size)
+2. make the cube move (without spinning)
+3. make the cube move (with spinning)
+4. make the cube change direction when hitting a wall
+5. make the cube change spinning direction when hitting a wall
+6. make the cube change its texture when hitting the wall
+
+The cube will be like a glass? So I need a normal glass picture + a broken glass picture
+
+//TODO: create a function to randomly spin a figure (spin direction + spin speed)
+    
+    I need to create a math.random() value in a separate function when hitting the wall
+    
+
+//TODO: create a function to randomly move a figure (change direction when hit the wall)
+
+
+smth to think about: 
+    1.  is it possible to create a 3D walls?
+    other option (easier imho): 2D walls (the screen borders)
+
+---------End----------
+*/
