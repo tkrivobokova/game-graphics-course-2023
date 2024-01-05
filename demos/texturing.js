@@ -99,6 +99,10 @@ let rotateXMatrix = mat4.create();
 let rotateYMatrix = mat4.create();
 let skyboxViewProjectionInverse = mat4.create();
 
+let translateVector = vec3.create();
+let translateXBoundary = 0.00;
+let translateYBoundary = 0.00;
+
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
 }
@@ -128,27 +132,49 @@ let rotationX = 0;
 let rotationY = 0;
 let rotationSpeed = 0;//Math.floor(Math.random() * 10);
 
+let translationX = 0.0;
+let translationY = 0.0;
+let translationSpeed = 1.0;
+let movingXDirection = 'right';
+let movingYDirection = 'up';
+
 function draw(timems) {
     const time = timems * 0.001;
     const deltaTime = time - previousTime;
     previousTime = time;
-    let rotationSpeedX = Math.sin(time) * rotationSpeed;
-    console.log(rotationSpeedX);
-    let rotationSpeedY= Math.sin(time);
+    let rotationSpeedX = Math.sin(time);// * rotationSpeed;
+    let rotationSpeedY = Math.sin(time);
     rotationX += deltaTime * rotationSpeedX;
     rotationY += deltaTime * rotationSpeedY;
+    const camRotSpeed = 0.1;
 
-    mat4.perspective(projMatrix, Math.PI / 2, app.width / app.height, 0.1, 100.0);
-    let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
+    chooseMovingDirection(translateXBoundary, translateYBoundary, deltaTime);
+    
+    
+    mat4.perspective(projMatrix, Math.PI * 0.25, app.width / app.height, 0.1, 100.0);
+    let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 5), vec3.fromValues(0, 0, 0), time * camRotSpeed);
+    //mat4.lookAt(viewMatrix, vec3.fromValues(0, 0.5, 5), vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
+    let cubePos = vec3.rotateY(vec3.create(), [translationX, translationY, 0.0], vec3.fromValues(0, 0, 0), time * camRotSpeed);
+    mat4.translate(modelMatrix, mat4.create(), cubePos);
+
     mat4.fromXRotation(rotateXMatrix, rotationX);
     mat4.fromZRotation(rotateYMatrix, rotationY);
-    mat4.multiply(modelMatrix, rotateXMatrix, rotateYMatrix);
+    mat4.multiply(modelMatrix, modelMatrix, rotateXMatrix);
+    mat4.multiply(modelMatrix, modelMatrix, rotateYMatrix);
+
 
     mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
+    
+    
+    //console.log(vec3.transformMat4(vec3.create(), vec3.create(), modelViewProjectionMatrix));
+    vec3.transformMat4(translateVector, vec3.create(), modelViewProjectionMatrix);
+    translateXBoundary = translateVector[0];
+    translateYBoundary = translateVector[1];
+    
 
     let skyboxViewProjectionMatrix = mat4.create();
     mat4.mul(skyboxViewProjectionMatrix, projMatrix, viewMatrix);
@@ -163,37 +189,51 @@ function draw(timems) {
 
     app.enable(PicoGL.DEPTH_TEST);
     app.enable(PicoGL.CULL_FACE);
+
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
-    drawCall.draw(); //ask why without a parameter
+    drawCall.draw();
 
     requestAnimationFrame(draw);
 }
 requestAnimationFrame(draw);
 
-
-/*
----------Plan---------
-
-1. define the walls (based on the screen size)
-2. make the cube move (without spinning)
-3. make the cube move (with spinning)
-4. make the cube change direction when hitting a wall
-5. make the cube change spinning direction when hitting a wall
-6. make the cube change its texture when hitting the wall
-
-The cube will be like a glass? So I need a normal glass picture + a broken glass picture
-
-//TODO: create a function to randomly spin a figure (spin direction + spin speed)
-    
-    I need to create a math.random() value in a separate function when hitting the wall
-    
-
-//TODO: create a function to randomly move a figure (change direction when hit the wall)
-
-
-smth to think about: 
-    1.  is it possible to create a 3D walls?
-    other option (easier imho): 2D walls (the screen borders)
-
----------End----------
-*/
+let directionY = 0.005;
+let directionX = 0.00;
+function chooseMovingDirection(positionX, positionY, deltaTime) {
+    if(movingXDirection === 'right') {
+        if(movingYDirection === 'up') {
+            translationY += 1 * directionY;
+            if(positionY >= 1.00) {
+                movingYDirection = 'bottom';
+                directionY = Math.floor(Math.random() * 10) / 1000;
+            }
+        } else {
+            translationY += -1 * directionY;
+            if (positionY <= -1.00) {
+                movingYDirection = 'up';
+            }
+        }
+        translationX += 1 * deltaTime;
+        if (positionX >= 1.00) {
+            movingXDirection = 'left';
+            
+        }
+    } else {
+        translationX += -1 * deltaTime;
+        if(movingYDirection === 'up') {
+            translationY += 1 * directionY;
+            if(positionY >= 1.00) {
+                movingYDirection = 'bottom';
+                directionY = Math.floor(Math.random() * 10) / 1000;
+            }
+        } else {
+            translationY += -1 * directionY;
+            if (positionY <= -1.00) {
+                movingYDirection = 'up';
+            }
+        }
+        if (positionX <= -1.00) {
+            movingXDirection = 'right';
+        }
+    }
+}
