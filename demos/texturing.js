@@ -197,8 +197,9 @@ function draw(timems) {
 
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     changeTextureSize();
+    changeCubeSize();
     //drawCall.uniform("textureSize", 1.0);
-    drawCall.uniform("cubeSize", 1.0);
+    //drawCall.uniform("cubeSize", 1.0);
     drawCall.draw();
 
     requestAnimationFrame(draw);
@@ -207,7 +208,8 @@ requestAnimationFrame(draw);
 
 let directionY = 0.5;
 let directionX = 0.5;
-let bounceCounter = 1.0; 
+let bounceXCounter = 1.0; 
+let bounceYCounter = 1.0;
 
 function chooseMovingDirection(positionX, positionY, deltaTime) {
     updateYDirection(positionY);
@@ -229,7 +231,7 @@ function updateXDirection(positionX) {
     if (positionX > 1.00 || positionX < -1.00) {
         movingXDirection = positionX > 1.00 ? 'left' : 'right';
         directionX = getRandomDirection();
-        bounceCounter += 1;
+        bounceXCounter += 1;
     }
 }
 
@@ -237,6 +239,7 @@ function updateYDirection(positionY) {
     if (positionY > 1.00 || positionY < -1.00) {
         movingYDirection = positionY > 1.00 ? 'bottom' : 'up';
         directionY = getRandomDirection();
+        bounceYCounter += 1;
     }
 }
 
@@ -245,5 +248,9 @@ function getRandomDirection() {
 }
 
 function changeTextureSize() {
-    drawCall.uniform("textureSize", bounceCounter);
+    drawCall.uniform("textureSize", bounceXCounter);
+}
+
+function changeCubeSize() {
+    drawCall.uniform("cubeSize", bounceYCounter * 0.1);
 }
