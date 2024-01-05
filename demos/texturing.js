@@ -16,6 +16,7 @@ let fragmentShader = `
     precision highp float;
     
     uniform sampler2D tex;    
+    uniform float textureSize;
     
     in vec2 v_uv;
     
@@ -23,7 +24,7 @@ let fragmentShader = `
     
     void main()
     {        
-        outColor = texture(tex, v_uv);
+        outColor = texture(tex, v_uv * textureSize);
     }
 `;
 
@@ -32,6 +33,7 @@ let vertexShader = `
     #version 300 es
             
     uniform mat4 modelViewProjectionMatrix;
+    uniform float cubeSize;
     
     layout(location=0) in vec3 position;
     layout(location=1) in vec3 normal;
@@ -41,7 +43,7 @@ let vertexShader = `
     
     void main()
     {
-        gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);           
+        gl_Position = modelViewProjectionMatrix * vec4(position * cubeSize, 1.0);           
         v_uv = uv;
     }
 `;
@@ -134,6 +136,9 @@ let rotationSpeed = 0;//Math.floor(Math.random() * 10);
 
 let translationX = 0.0;
 let translationY = 0.0;
+let prevTranslationX = 0.0;
+let prevTranslationY = 0.0;
+
 let translationSpeed = 1.0;
 let movingXDirection = 'right';
 let movingYDirection = 'up';
@@ -191,6 +196,9 @@ function draw(timems) {
     app.enable(PicoGL.CULL_FACE);
 
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
+    changeTextureSize();
+    //drawCall.uniform("textureSize", 1.0);
+    drawCall.uniform("cubeSize", 1.0);
     drawCall.draw();
 
     requestAnimationFrame(draw);
@@ -199,47 +207,43 @@ requestAnimationFrame(draw);
 
 let directionY = 0.5;
 let directionX = 0.5;
+let bounceCounter = 1.0; 
+
 function chooseMovingDirection(positionX, positionY, deltaTime) {
-    if(movingXDirection === 'right') {
-        if(movingYDirection === 'up') {
-            translationY += directionY * deltaTime;
-            changeYDirection(positionY);
-        } else {
-            translationY += -directionY * deltaTime;
-            changeYDirection(positionY);
-        }
+    updateYDirection(positionY);
+    updateXDirection(positionX);
+    if (movingXDirection === 'right') {
         translationX += directionX * deltaTime;
-        changeXDirection(positionX);
     } else {
-        if(movingYDirection === 'up') {
-            translationY += directionY * deltaTime;
-            changeYDirection(positionY);
-        } else {
-            translationY += -directionY * deltaTime;
-            changeYDirection(positionY);
-        }
         translationX += -directionX * deltaTime;
-        changeXDirection(positionX);
+    }
+
+    if (movingYDirection === 'up') {
+        translationY += directionY * deltaTime;
+    } else {
+        translationY += -directionY * deltaTime;
     }
 }
 
-function changeXDirection (positionX) {
-    if (positionX >= 1.00) {
-        movingXDirection = 'left';
-        directionX = Math.floor(Math.random() * 10) / 10;
-    } else if (positionX <= -1.00) {
-        movingXDirection = 'right';
-        directionX = Math.floor(Math.random() * 10) / 10;
+function updateXDirection(positionX) {
+    if (positionX > 1.00 || positionX < -1.00) {
+        movingXDirection = positionX > 1.00 ? 'left' : 'right';
+        directionX = getRandomDirection();
+        bounceCounter += 1;
     }
 }
 
-function changeYDirection (positionY) {
-    if(positionY >= 1.00) {
-        movingYDirection = 'bottom';
-        directionY = Math.floor(Math.random() * 10) / 10;
-    } else if (positionY <= -1.00) {
-        movingYDirection = 'up';
-        directionY = Math.floor(Math.random() * 10) / 10;
+function updateYDirection(positionY) {
+    if (positionY > 1.00 || positionY < -1.00) {
+        movingYDirection = positionY > 1.00 ? 'bottom' : 'up';
+        directionY = getRandomDirection();
     }
+}
 
+function getRandomDirection() {
+    return Math.floor(Math.random() * 10) / 10;
+}
+
+function changeTextureSize() {
+    drawCall.uniform("textureSize", bounceCounter);
 }
