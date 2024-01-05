@@ -197,43 +197,49 @@ function draw(timems) {
 }
 requestAnimationFrame(draw);
 
-let directionY = 0.005;
-let directionX = 0.00;
+let directionY = 0.5;
+let directionX = 0.5;
 function chooseMovingDirection(positionX, positionY, deltaTime) {
     if(movingXDirection === 'right') {
         if(movingYDirection === 'up') {
-            translationY += 1 * directionY;
-            if(positionY >= 1.00) {
-                movingYDirection = 'bottom';
-                directionY = Math.floor(Math.random() * 10) / 1000;
-            }
+            translationY += directionY * deltaTime;
+            changeYDirection(positionY);
         } else {
-            translationY += -1 * directionY;
-            if (positionY <= -1.00) {
-                movingYDirection = 'up';
-            }
+            translationY += -directionY * deltaTime;
+            changeYDirection(positionY);
         }
-        translationX += 1 * deltaTime;
-        if (positionX >= 1.00) {
-            movingXDirection = 'left';
-            
-        }
+        translationX += directionX * deltaTime;
+        changeXDirection(positionX);
     } else {
-        translationX += -1 * deltaTime;
         if(movingYDirection === 'up') {
-            translationY += 1 * directionY;
-            if(positionY >= 1.00) {
-                movingYDirection = 'bottom';
-                directionY = Math.floor(Math.random() * 10) / 1000;
-            }
+            translationY += directionY * deltaTime;
+            changeYDirection(positionY);
         } else {
-            translationY += -1 * directionY;
-            if (positionY <= -1.00) {
-                movingYDirection = 'up';
-            }
+            translationY += -directionY * deltaTime;
+            changeYDirection(positionY);
         }
-        if (positionX <= -1.00) {
-            movingXDirection = 'right';
-        }
+        translationX += -directionX * deltaTime;
+        changeXDirection(positionX);
     }
+}
+
+function changeXDirection (positionX) {
+    if (positionX >= 1.00) {
+        movingXDirection = 'left';
+        directionX = Math.floor(Math.random() * 10) / 10;
+    } else if (positionX <= -1.00) {
+        movingXDirection = 'right';
+        directionX = Math.floor(Math.random() * 10) / 10;
+    }
+}
+
+function changeYDirection (positionY) {
+    if(positionY >= 1.00) {
+        movingYDirection = 'bottom';
+        directionY = Math.floor(Math.random() * 10) / 10;
+    } else if (positionY <= -1.00) {
+        movingYDirection = 'up';
+        directionY = Math.floor(Math.random() * 10) / 10;
+    }
+
 }
