@@ -136,10 +136,9 @@ let rotationSpeed = 0;//Math.floor(Math.random() * 10);
 
 let translationX = 0.0;
 let translationY = 0.0;
-let prevTranslationX = 0.0;
-let prevTranslationY = 0.0;
 
-let translationSpeed = 1.0;
+let speedX = 1;
+let speedY = -1;
 let movingXDirection = 'right';
 let movingYDirection = 'up';
 
@@ -208,6 +207,7 @@ requestAnimationFrame(draw);
 
 let directionY = 0.5;
 let directionX = 0.5;
+
 let bounceXCounter = 1.0; 
 let bounceYCounter = 1.0;
 
@@ -215,15 +215,15 @@ function chooseMovingDirection(positionX, positionY, deltaTime) {
     updateYDirection(positionY);
     updateXDirection(positionX);
     if (movingXDirection === 'right') {
-        translationX += directionX * deltaTime;
+        translationX += directionX * deltaTime * speedX;
     } else {
-        translationX += -directionX * deltaTime;
+        translationX += -directionX * deltaTime * speedX;
     }
 
     if (movingYDirection === 'up') {
-        translationY += directionY * deltaTime;
+        translationY += directionY * deltaTime * speedY;
     } else {
-        translationY += -directionY * deltaTime;
+        translationY += -directionY * deltaTime * speedY;
     }
 }
 
@@ -239,12 +239,20 @@ function updateYDirection(positionY) {
     if (positionY > 1.00 || positionY < -1.00) {
         movingYDirection = positionY > 1.00 ? 'bottom' : 'up';
         directionY = getRandomDirection();
+        speedY = getRandomSpeed();
         bounceYCounter += 1;
     }
 }
 
 function getRandomDirection() {
     return Math.floor(Math.random() * 10) / 10;
+}
+
+function getRandomSpeed() {
+    let speed = Math.floor(Math.random() * 10);
+    if (speed == 0)
+        speed = 1;
+    return speed;
 }
 
 function changeTextureSize() {
