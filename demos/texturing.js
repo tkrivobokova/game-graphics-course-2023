@@ -132,7 +132,7 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
 let previousTime = 0;
 let rotationX = 0;
 let rotationY = 0;
-let rotationSpeed = 0;//Math.floor(Math.random() * 10);
+let rotationSpeed = 0;
 
 let translationX = 0.0;
 let translationY = 0.0;
@@ -146,7 +146,7 @@ function draw(timems) {
     const time = timems * 0.001;
     const deltaTime = time - previousTime;
     previousTime = time;
-    let rotationSpeedX = Math.sin(time);// * rotationSpeed;
+    let rotationSpeedX = Math.sin(time);
     let rotationSpeedY = Math.sin(time);
     rotationX += deltaTime * rotationSpeedX;
     rotationY += deltaTime * rotationSpeedY;
@@ -157,7 +157,6 @@ function draw(timems) {
     
     mat4.perspective(projMatrix, Math.PI * 0.25, app.width / app.height, 0.1, 100.0);
     let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 5), vec3.fromValues(0, 0, 0), time * camRotSpeed);
-    //mat4.lookAt(viewMatrix, vec3.fromValues(0, 0.5, 5), vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
@@ -173,8 +172,7 @@ function draw(timems) {
     mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
     
-    
-    //console.log(vec3.transformMat4(vec3.create(), vec3.create(), modelViewProjectionMatrix));
+
     vec3.transformMat4(translateVector, vec3.create(), modelViewProjectionMatrix);
     translateXBoundary = translateVector[0];
     translateYBoundary = translateVector[1];
@@ -197,8 +195,6 @@ function draw(timems) {
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     changeTextureSize();
     changeCubeSize();
-    //drawCall.uniform("textureSize", 1.0);
-    //drawCall.uniform("cubeSize", 1.0);
     drawCall.draw();
 
     requestAnimationFrame(draw);
