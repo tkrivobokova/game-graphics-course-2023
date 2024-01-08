@@ -115,8 +115,8 @@ let drawCall = app.createDrawCall(program, vertexArray)
         magFilter: PicoGL.NEAREST,
         minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
         maxAnisotropy: 10,
-        wrapS: PicoGL.REPEAT,
-        wrapT: PicoGL.REPEAT
+        wrapS: PicoGL.MIRRORED_REPEAT,
+        wrapT: PicoGL.MIRRORED_REPEAT
     }));
 
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
@@ -132,7 +132,8 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
 let previousTime = 0;
 let rotationX = 0;
 let rotationY = 0;
-let rotationSpeed = 0;
+let rotationSpeedX = 0;
+let rotationSpeedY = 0;
 
 let translationX = 0.0;
 let translationY = 0.0;
@@ -146,8 +147,6 @@ function draw(timems) {
     const time = timems * 0.001;
     const deltaTime = time - previousTime;
     previousTime = time;
-    let rotationSpeedX = Math.sin(time);
-    let rotationSpeedY = Math.sin(time);
     rotationX += deltaTime * rotationSpeedX;
     rotationY += deltaTime * rotationSpeedY;
     const camRotSpeed = 0.1;
@@ -233,6 +232,7 @@ function updateXDirection(positionX) {
         speedX = getRandomSpeed();
         if (!bouncedX) {
             bounceXCounter += 1;
+            rotationSpeedX = getRandomSpeedRotation();
             bouncedX = true;
         }
     } else {
@@ -247,6 +247,7 @@ function updateYDirection(positionY) {
         speedY = getRandomSpeed();
         if (!bouncedY) {
             bounceYCounter += 1;
+            rotationSpeedY = getRandomSpeedRotation();
             bouncedY = true;
         }
     } else {
@@ -260,6 +261,10 @@ function getRandomDirection() {
 
 function getRandomSpeed() {
     return Math.floor(Math.random() * 10) + 1;
+}
+
+function getRandomSpeedRotation() {
+    return Math.floor(Math.random() * -10);
 }
 
 function changeTextureSize() {
