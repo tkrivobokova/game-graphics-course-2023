@@ -153,7 +153,7 @@ function draw(timems) {
     const camRotSpeed = 0.1;
 
     chooseMovingDirection(translateXBoundary, translateYBoundary, deltaTime);
-    
+       
     
     mat4.perspective(projMatrix, Math.PI * 0.25, app.width / app.height, 0.1, 100.0);
     let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 5), vec3.fromValues(0, 0, 0), time * camRotSpeed);
@@ -211,6 +211,9 @@ let directionX = 0.5;
 let bounceXCounter = 1.0; 
 let bounceYCounter = 1.0;
 
+let bouncedX = false; 
+let bouncedY = false;
+
 function chooseMovingDirection(positionX, positionY, deltaTime) {
     updateYDirection(positionY);
     updateXDirection(positionX);
@@ -231,7 +234,13 @@ function updateXDirection(positionX) {
     if (positionX > 1.00 || positionX < -1.00) {
         movingXDirection = positionX > 1.00 ? 'left' : 'right';
         directionX = getRandomDirection();
-        bounceXCounter += 1;
+        speedX = getRandomSpeed();
+        if (!bouncedX) {
+            bounceXCounter += 1;
+            bouncedX = true;
+        }
+    } else {
+        bouncedX = false;
     }
 }
 
@@ -240,7 +249,12 @@ function updateYDirection(positionY) {
         movingYDirection = positionY > 1.00 ? 'bottom' : 'up';
         directionY = getRandomDirection();
         speedY = getRandomSpeed();
-        bounceYCounter += 1;
+        if (!bouncedY) {
+            bounceYCounter += 1;
+            bouncedY = true;
+        }
+    } else {
+        bouncedY = false;
     }
 }
 
@@ -249,10 +263,7 @@ function getRandomDirection() {
 }
 
 function getRandomSpeed() {
-    let speed = Math.floor(Math.random() * 10);
-    if (speed == 0)
-        speed = 1;
-    return speed;
+    return Math.floor(Math.random() * 10) + 1;
 }
 
 function changeTextureSize() {
