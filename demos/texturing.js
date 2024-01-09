@@ -111,37 +111,38 @@ let previousTime = 0;
 
 const camRotSpeed = 0.1;
 
-function createCube(translationX, translationY, texture, size) {
+function createCube(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, childMovingXDirection) {
     let newCube = {
-        rotationX: 0,
-        rotationY: 0,
-        rotationSpeedX: 0,
-        rotationSpeedY: 0,
-        directionX: getRandomDirection(),
-        directionY: getRandomDirection(),
+        rotationX: rotationX,
+        rotationY: rotationY,
+        rotationSpeedX: rotationSpeedX,
+        rotationSpeedY: rotationSpeedY,
+        directionX: directionX,
+        directionY: directionY,
         bouncedX: false,
         bouncedY: false,
-        movingXDirection: 'right',
-        movingYDirection: 'up',
+        movingXDirection: movingXDirection,
+        movingYDirection: movingYDirection,
         translationX: translationX,
         translationY: translationY,
         bounceXCounter: 0,
         bounceYCounter: 0,
-        speedX: 1,
-        speedY: 1,
-        translateXBoundary: 0.00,
-        translateYBoundary: 0.00,
+        speedX: speedX,
+        speedY: speedY,
+        translateXBoundary: translateXBoundary,
+        translateYBoundary: translateYBoundary,
         childCubeCreated: false,
         cubeTextureChanged: false,
         texturePicture: texture,
         cubeSize: size,
-        textureSize: 1
+        textureSize: 1,
+        childMovingXDirection: childMovingXDirection
     };
     cubes.push(newCube);
 }
 
 if (cubes.length === 0) {
-    createCube(0, 0, cubeTextures[0], 1);
+    createCube(0, 0, 0, 0, getRandomDirection(), getRandomDirection(), 'right', 'up', 1, 1, 0, 0, 0, 0, cubeTextures[0], 1, 'left');
 }
 
 async function loadTexture(fileName) {
@@ -171,7 +172,13 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
 async function createChildCube(cube) {
     if (cube.bounceYCounter % 5 === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0 && cubeCount < 10) {
         cube.cubeSize = Math.floor((cube.cubeSize + 1) * 0.5);
-        createCube(cube.translationX, cube.translationY, cube.texturePicture, cube.cubeSize);
+        cube.speedX *= 2;
+        cube.speedY *= 2;
+        cube.rotationSpeedX *= 0.5;
+        cube.rotationSpeedY *= 0.5;
+
+        createCube(-cube.rotationX, -cube.rotationY, cube.rotationSpeedX, cube.rotationSpeedY, cube.directionX, cube.directionY, cube.childMovingXDirection, cube.childMovingYDirection, cube.speedX, cube.speedY, cube.translationX, cube.translationY, cube.translateXBoundary, cube.translateYBoundary, cube.texturePicture, cube.cubeSize, cube.movingXDirection);
+       
         cube.childCubeCreated = true;
         cubeCount += 1;
     } else if (cube.bounceYCounter % 5 !== 0) {
@@ -272,8 +279,10 @@ function chooseMovingDirection(cube, deltaTime) {
 
     if (cube.movingXDirection === 'right') {
         cube.translationX += cube.directionX * deltaTime * cube.speedX;
+        cube.childMovingXDirection = 'left';
     } else {
         cube.translationX += -cube.directionX * deltaTime * cube.speedX;
+        cube.childMovingXDirection = 'right';
     }
 
     if (cube.movingYDirection === 'up') {
