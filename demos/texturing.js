@@ -105,8 +105,9 @@ let translateVector = vec3.create();
 
 let cubes = [];
 let cubeTextures = ["steel.jpg", "art.jpg", "ash.jpg", "ice.jpg", "pastry.jpg", "plant.jpg", "wood.jpg", "abstract.jpg", "noise.png"];
+let cubeCount = 1;
 
-function createCube(texture) {
+function createCube(translationX, translationY, texture, size) {
     let newCube = {
         rotationX: 0,
         rotationY: 0,
@@ -118,8 +119,8 @@ function createCube(texture) {
         bouncedY: false,
         movingXDirection: 'right',
         movingYDirection: 'up',
-        translationX: 0.0,
-        translationY: 0.0,
+        translationX: translationX,
+        translationY: translationY,
         bounceXCounter: 0,
         bounceYCounter: 0,
         speedX: 1,
@@ -129,14 +130,14 @@ function createCube(texture) {
         childCubeCreated: false,
         cubeTextureChanged: false,
         texturePicture: texture,
-        cubeSize: 1,
+        cubeSize: size,
         textureSize: 1
     };
     cubes.push(newCube);
 }
 
 if (cubes.length === 0) {
-    createCube(cubeTextures[0]);
+    createCube(0, 0, cubeTextures[0], 1);
 }
 
 async function loadTexture(fileName) {
@@ -194,14 +195,16 @@ async function drawCubes(deltaTime, time) {
         changeCubeSize(cube);
         drawCall.draw();
 
-        if (cube.bounceYCounter % 10 === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0) {
-            createCube(cube.texturePicture);
-            cube.childCubeCreated = true;
-        } else if (cube.bounceYCounter % 10 !== 0) {
-            cube.childCubeCreated = false;
-        }
+            if (cube.bounceYCounter % 5 === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0 && cubeCount < 10) {
+                cube.cubeSize = Math.floor((cube.cubeSize + 1) * 0.5);
+                createCube(cube.translationX, cube.translationY, cube.texturePicture, cube.cubeSize);
+                cube.childCubeCreated = true;
+                cubeCount += 1;
+            } else if (cube.bounceYCounter % 5 !== 0) {
+                cube.childCubeCreated = false;
+            }
 
-        if (cube.bounceXCounter % 10 === 0 && !cube.cubeTextureChanged && cube.bounceYCounter !== 0) {
+        if (cube.bounceXCounter % 10 === 0 && !cube.cubeTextureChanged && cube.bounceXCounter !== 0) {
             const randomIndex = Math.floor(Math.random() * cubeTextures.length);
             const newTexture = await loadTexture(cubeTextures[randomIndex]);
             cube.texturePicture = cubeTextures[randomIndex];
@@ -279,7 +282,7 @@ function updateXDirection(cube) {
         cube.speedX = getRandomSpeed();
         if (!cube.bouncedX) {
             cube.bounceXCounter += 1;
-            cube.TextureSize += 1;
+            cube.textureSize += 1;
             cube.rotationSpeedX = getRandomSpeedRotation();
             cube.bouncedX = true;
         }
@@ -295,9 +298,11 @@ function updateYDirection(cube) {
         cube.speedY = getRandomSpeed();
         if (!cube.bouncedY) {
             cube.bounceYCounter += 1;
-            cube.cubeSize += 1;
             cube.rotationSpeedY = getRandomSpeedRotation();
             cube.bouncedY = true;
+            if (cubeCount < 10) {
+                cube.cubeSize += 1;
+            }
         }
     } else {
         cube.bouncedY = false;
@@ -317,9 +322,9 @@ function getRandomSpeedRotation() {
 }
 
 function changeTextureSize(cube) {
-    drawCall.uniform("textureSize", cube.cubeSize);
+    drawCall.uniform("textureSize", cube.textureSize);
 }
 
 function changeCubeSize(cube) {
-    drawCall.uniform("cubeSize", cube.textureSize * 0.1);
+    drawCall.uniform("cubeSize", cube.cubeSize * 0.1);
 }
