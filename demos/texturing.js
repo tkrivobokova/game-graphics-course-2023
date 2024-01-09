@@ -124,7 +124,8 @@ function createCube() {
         speedX: 1,
         speedY: 1,
         translateXBoundary: 0.00,
-        translateYBoundary: 0.00
+        translateYBoundary: 0.00,
+        childCubeCreated: false
     };
     cubes.push(newCube);
 }
@@ -158,42 +159,57 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
     }));
 
 let previousTime = 0;
+const camRotSpeed = 0.1;
+
+function drawCubes(deltaTime, time) {
+    for (let i = 0; i < cubes.length; i++) {
+        let cube = cubes[i];
+
+        cube.rotationX += deltaTime * cube.rotationSpeedX;
+        cube.rotationY += deltaTime * cube.rotationSpeedY;
+
+        chooseMovingDirection(cube, deltaTime);
+        
+        let cubePos = vec3.rotateY(vec3.create(), [cube.translationX, cube.translationY, 0.0], vec3.fromValues(0, 0, 0), time * camRotSpeed);
+        mat4.translate(modelMatrix, mat4.create(), cubePos);  
+        
+        mat4.fromXRotation(rotateXMatrix, cube.rotationX);
+        mat4.fromZRotation(rotateYMatrix, cube.rotationY);
+        mat4.multiply(modelMatrix, modelMatrix, rotateXMatrix);
+        mat4.multiply(modelMatrix, modelMatrix, rotateYMatrix);
+
+        mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
+        mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
+
+        vec3.transformMat4(translateVector, vec3.create(), modelViewProjectionMatrix);
+        cube.translateXBoundary = translateVector[0];
+        cube.translateYBoundary = translateVector[1];
+        
+        changeTextureSize(cube);
+        changeCubeSize(cube);
+        drawCall.draw();
+
+        if(cube.bounceYCounter % 10 === 0 && !cube.childCubeCreated) {
+            createCube();
+            cube.childCubeCreated = true;
+        }  else if (cube.bounceYCounter % 10 !== 0) {
+            cube.childCubeCreated = false;
+        }
+    }
+}
+
+let bounceYCounter = 1;
 
 function draw(timems) {
-    for (let i = 0; i < cubes.length; i++) {
-    let cube = cubes[i];
     const time = timems * 0.001;
     const deltaTime = time - previousTime;
     previousTime = time;
-    cube.rotationX += deltaTime * cube.rotationSpeedX;
-    cube.rotationY += deltaTime * cube.rotationSpeedY;
-    const camRotSpeed = 0.1;
-
-    chooseMovingDirection(cube, deltaTime);
-       
     
     mat4.perspective(projMatrix, Math.PI * 0.25, app.width / app.height, 0.1, 100.0);
     let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 5), vec3.fromValues(0, 0, 0), time * camRotSpeed);
     mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
-    let cubePos = vec3.rotateY(vec3.create(), [cube.translationX, cube.translationY, 0.0], vec3.fromValues(0, 0, 0), time * camRotSpeed);
-    mat4.translate(modelMatrix, mat4.create(), cubePos);
-
-    mat4.fromXRotation(rotateXMatrix, cube.rotationX);
-    mat4.fromZRotation(rotateYMatrix, cube.rotationY);
-    mat4.multiply(modelMatrix, modelMatrix, rotateXMatrix);
-    mat4.multiply(modelMatrix, modelMatrix, rotateYMatrix);
-
-
-    mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
-    mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
-    
-
-    vec3.transformMat4(translateVector, vec3.create(), modelViewProjectionMatrix);
-    cube.translateXBoundary = translateVector[0];
-    cube.translateYBoundary = translateVector[1];
-    
 
     let skyboxViewProjectionMatrix = mat4.create();
     mat4.mul(skyboxViewProjectionMatrix, projMatrix, viewMatrix);
@@ -209,16 +225,14 @@ function draw(timems) {
     app.enable(PicoGL.DEPTH_TEST);
     app.enable(PicoGL.CULL_FACE);
 
+    drawCubes(deltaTime, time);
+
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
-    changeTextureSize(cube);
-    changeCubeSize(cube);
-    drawCall.draw();
-    console.log('x: ' + cube.bounceXCounter + ', y: ' + cube.bounceYCounter);
-    if(cube.bounceYCounter === 10) {
-        createCube();
-    }
-    }
+    
+    
+    
     requestAnimationFrame(draw);
+
 }
 requestAnimationFrame(draw);
 
@@ -260,6 +274,7 @@ function updateYDirection(cube) {
         cube.speedY = getRandomSpeed();
         if (!cube.bouncedY) {
             cube.bounceYCounter += 1;
+            bounceYCounter += 1;
             cube.rotationSpeedY = getRandomSpeedRotation();
             cube.bouncedY = true;
         }
