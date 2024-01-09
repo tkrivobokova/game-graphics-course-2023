@@ -105,7 +105,11 @@ let translateVector = vec3.create();
 
 let cubes = [];
 let cubeTextures = ["steel.jpg", "art.jpg", "ash.jpg", "ice.jpg", "pastry.jpg", "plant.jpg", "wood.jpg", "abstract.jpg", "noise.png"];
+
 let cubeCount = 1;
+let previousTime = 0;
+
+const camRotSpeed = 0.1;
 
 function createCube(translationX, translationY, texture, size) {
     let newCube = {
@@ -164,61 +168,68 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
         posZ: await loadTexture("stormydays_rt.png")
     }));
 
-let previousTime = 0;
-const camRotSpeed = 0.1;
+async function createChildCube(cube) {
+    if (cube.bounceYCounter % 5 === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0 && cubeCount < 10) {
+        cube.cubeSize = Math.floor((cube.cubeSize + 1) * 0.5);
+        createCube(cube.translationX, cube.translationY, cube.texturePicture, cube.cubeSize);
+        cube.childCubeCreated = true;
+        cubeCount += 1;
+    } else if (cube.bounceYCounter % 5 !== 0) {
+        cube.childCubeCreated = false;
+    }
+}
+
+async function changeCubeTexture(cube) {
+    if (cube.bounceXCounter % 10 === 0 && !cube.cubeTextureChanged && cube.bounceXCounter !== 0) {
+        const randomIndex = Math.floor(Math.random() * cubeTextures.length);
+        const newTexture = await loadTexture(cubeTextures[randomIndex]);
+        cube.texturePicture = cubeTextures[randomIndex];
+        drawCall.texture("tex", app.createTexture2D(newTexture, newTexture.width, newTexture.height, {
+            magFilter: PicoGL.NEAREST,
+            minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
+            maxAnisotropy: 10,
+            wrapS: PicoGL.MIRRORED_REPEAT,
+            wrapT: PicoGL.MIRRORED_REPEAT
+        }));
+        cube.cubeTextureChanged = true;
+    } else if (cube.bounceXCounter % 10 !== 0) {
+        cube.cubeTextureChanged = false;
+    }
+}
+
+async function updateCube(cube, deltaTime, time) {
+    cube.rotationX += deltaTime * cube.rotationSpeedX;
+    cube.rotationY += deltaTime * cube.rotationSpeedY;
+
+    chooseMovingDirection(cube, deltaTime);
+
+    let cubePos = vec3.rotateY(vec3.create(), [cube.translationX, cube.translationY, 0.0], vec3.fromValues(0, 0, 0), time * camRotSpeed);
+    mat4.translate(modelMatrix, mat4.create(), cubePos);
+
+    mat4.fromXRotation(rotateXMatrix, cube.rotationX);
+    mat4.fromZRotation(rotateYMatrix, cube.rotationY);
+    mat4.multiply(modelMatrix, modelMatrix, rotateXMatrix);
+    mat4.multiply(modelMatrix, modelMatrix, rotateYMatrix);
+
+    mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
+    mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
+
+    vec3.transformMat4(translateVector, vec3.create(), modelViewProjectionMatrix);
+    cube.translateXBoundary = translateVector[0];
+    cube.translateYBoundary = translateVector[1];
+
+    changeTextureSize(cube);
+    changeCubeSize(cube);
+    drawCall.draw();
+}
 
 async function drawCubes(deltaTime, time) {
     for (let i = 0; i < cubes.length; i++) {
         let cube = cubes[i];
 
-        cube.rotationX += deltaTime * cube.rotationSpeedX;
-        cube.rotationY += deltaTime * cube.rotationSpeedY;
-
-        chooseMovingDirection(cube, deltaTime);
-
-        let cubePos = vec3.rotateY(vec3.create(), [cube.translationX, cube.translationY, 0.0], vec3.fromValues(0, 0, 0), time * camRotSpeed);
-        mat4.translate(modelMatrix, mat4.create(), cubePos);
-
-        mat4.fromXRotation(rotateXMatrix, cube.rotationX);
-        mat4.fromZRotation(rotateYMatrix, cube.rotationY);
-        mat4.multiply(modelMatrix, modelMatrix, rotateXMatrix);
-        mat4.multiply(modelMatrix, modelMatrix, rotateYMatrix);
-
-        mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
-        mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
-
-        vec3.transformMat4(translateVector, vec3.create(), modelViewProjectionMatrix);
-        cube.translateXBoundary = translateVector[0];
-        cube.translateYBoundary = translateVector[1];
-
-        changeTextureSize(cube);
-        changeCubeSize(cube);
-        drawCall.draw();
-
-            if (cube.bounceYCounter % 5 === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0 && cubeCount < 10) {
-                cube.cubeSize = Math.floor((cube.cubeSize + 1) * 0.5);
-                createCube(cube.translationX, cube.translationY, cube.texturePicture, cube.cubeSize);
-                cube.childCubeCreated = true;
-                cubeCount += 1;
-            } else if (cube.bounceYCounter % 5 !== 0) {
-                cube.childCubeCreated = false;
-            }
-
-        if (cube.bounceXCounter % 10 === 0 && !cube.cubeTextureChanged && cube.bounceXCounter !== 0) {
-            const randomIndex = Math.floor(Math.random() * cubeTextures.length);
-            const newTexture = await loadTexture(cubeTextures[randomIndex]);
-            cube.texturePicture = cubeTextures[randomIndex];
-            drawCall.texture("tex", app.createTexture2D(newTexture, newTexture.width, newTexture.height, {
-                magFilter: PicoGL.NEAREST,
-                minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
-                maxAnisotropy: 10,
-                wrapS: PicoGL.MIRRORED_REPEAT,
-                wrapT: PicoGL.MIRRORED_REPEAT
-            }));
-            cube.cubeTextureChanged = true;
-        } else if (cube.bounceXCounter % 10 !== 0) {
-            cube.cubeTextureChanged = false;
-        }
+        await updateCube(cube, deltaTime, time);
+        await createChildCube(cube);
+        await changeCubeTexture(cube);
     }
 }
 
@@ -231,7 +242,6 @@ function draw(timems) {
     let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 5), vec3.fromValues(0, 0, 0), time * camRotSpeed);
     mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
-
 
     let skyboxViewProjectionMatrix = mat4.create();
     mat4.mul(skyboxViewProjectionMatrix, projMatrix, viewMatrix);
@@ -250,8 +260,6 @@ function draw(timems) {
     drawCubes(deltaTime, time);
 
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
-
-
 
     requestAnimationFrame(draw);
 
