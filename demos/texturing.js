@@ -25,7 +25,7 @@ let fragmentShader = `
     void main()
     {
         outColor = texture(tex, v_uv * textureSize);
-            }
+    }
 `;
 
 // language=GLSL
@@ -104,14 +104,15 @@ let skyboxViewProjectionInverse = mat4.create();
 let translateVector = vec3.create();
 
 let cubes = [];
-let cubeTextures = ["steel.jpg", "art.jpg", "ash.jpg", "ice.jpg", "pastry.jpg", "plant.jpg", "wood.jpg", "abstract.jpg", "noise.png"];
+let cubeTextures = ["steel.jpg", "art.jpg", "ash.jpg", "ice.jpg", "pastry.jpg", "plant.jpg", "wood.jpg", "abstract.jpg"];
 
 let cubeCount = 1;
 let previousTime = 0;
 
 const camRotSpeed = 0.1;
+const maxCubeAmount = 6;
 
-function createCube(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, childMovingXDirection) {
+function createCube(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, textureSize, childMovingXDirection) {
     let newCube = {
         rotationX: rotationX,
         rotationY: rotationY,
@@ -135,21 +136,21 @@ function createCube(rotationX, rotationY, rotationSpeedX, rotationSpeedY, direct
         cubeTextureChanged: false,
         texturePicture: texture,
         cubeSize: size,
-        textureSize: 1,
+        textureSize: textureSize,
         childMovingXDirection: childMovingXDirection
     };
     cubes.push(newCube);
 }
 
 if (cubes.length === 0) {
-    createCube(0, 0, 0, 0, getRandomDirection(), getRandomDirection(), 'right', 'up', 1, 1, 0, 0, 0, 0, cubeTextures[0], 1, 'left');
+    createCube(0, 0, 0, 0, 0.5, 0.5, 'right', 'up', 1, 1, 0, 0, 0, 0, cubeTextures[4], 2, 1, 'left');
 }
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
 }
 
-const tex = await loadTexture(cubeTextures[0]);
+const tex = await loadTexture(cubeTextures[1]);
 let drawCall = app.createDrawCall(program, vertexArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
         magFilter: PicoGL.NEAREST,
@@ -158,26 +159,26 @@ let drawCall = app.createDrawCall(program, vertexArray)
         wrapS: PicoGL.MIRRORED_REPEAT,
         wrapT: PicoGL.MIRRORED_REPEAT
     }));
-
+    
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
     .texture("cubemap", app.createCubemap({
-        negX: await loadTexture("stormydays_bk.png"),
-        posX: await loadTexture("stormydays_ft.png"),
-        negY: await loadTexture("stormydays_dn.png"),
-        posY: await loadTexture("stormydays_up.png"),
-        negZ: await loadTexture("stormydays_lf.png"),
-        posZ: await loadTexture("stormydays_rt.png")
+        negX: await loadTexture("nx.png"),
+        posX: await loadTexture("px.png"),
+        negY: await loadTexture("ny.png"),
+        posY: await loadTexture("py.png"),
+        negZ: await loadTexture("nz.png"),
+        posZ: await loadTexture("pz.png")
     }));
 
 async function createChildCube(cube) {
-    if (cube.bounceYCounter % 5 === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0 && cubeCount < 10) {
+    if (cube.bounceYCounter % 5 === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0 && cubeCount < maxCubeAmount) {
         cube.cubeSize = Math.floor((cube.cubeSize + 1) * 0.5);
         cube.speedX *= 2;
         cube.speedY *= 2;
         cube.rotationSpeedX *= 0.5;
         cube.rotationSpeedY *= 0.5;
 
-        createCube(-cube.rotationX, -cube.rotationY, cube.rotationSpeedX, cube.rotationSpeedY, cube.directionX, cube.directionY, cube.childMovingXDirection, cube.childMovingYDirection, cube.speedX, cube.speedY, cube.translationX, cube.translationY, cube.translateXBoundary, cube.translateYBoundary, cube.texturePicture, cube.cubeSize, cube.movingXDirection);
+        createCube(-cube.rotationX, -cube.rotationY, cube.rotationSpeedX, cube.rotationSpeedY, cube.directionX, cube.directionY, cube.childMovingXDirection, cube.childMovingYDirection, cube.speedX, cube.speedY, cube.translationX, cube.translationY, cube.translateXBoundary, cube.translateYBoundary, cube.texturePicture, cube.cubeSize, cube.textureSize, cube.movingXDirection);
        
         cube.childCubeCreated = true;
         cubeCount += 1;
@@ -187,19 +188,20 @@ async function createChildCube(cube) {
 }
 
 async function changeCubeTexture(cube) {
-    if (cube.bounceXCounter % 10 === 0 && !cube.cubeTextureChanged && cube.bounceXCounter !== 0) {
+    if (cube.bounceXCounter % 5 === 0 && !cube.cubeTextureChanged && cube.bounceXCounter !== 0) {
         const randomIndex = Math.floor(Math.random() * cubeTextures.length);
         const newTexture = await loadTexture(cubeTextures[randomIndex]);
         cube.texturePicture = cubeTextures[randomIndex];
-        drawCall.texture("tex", app.createTexture2D(newTexture, newTexture.width, newTexture.height, {
+        /*drawCall.texture("tex", app.createTexture2D(newTexture, newTexture.width, newTexture.height, {
             magFilter: PicoGL.NEAREST,
             minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
             maxAnisotropy: 10,
             wrapS: PicoGL.MIRRORED_REPEAT,
             wrapT: PicoGL.MIRRORED_REPEAT
-        }));
+        }));*/
+        cube.textureSize = 1;
         cube.cubeTextureChanged = true;
-    } else if (cube.bounceXCounter % 10 !== 0) {
+    } else if (cube.bounceXCounter % 5 !== 0) {
         cube.cubeTextureChanged = false;
     }
 }
@@ -245,7 +247,7 @@ function draw(timems) {
     const deltaTime = time - previousTime;
     previousTime = time;
 
-    mat4.perspective(projMatrix, Math.PI * 0.25, app.width / app.height, 0.1, 100.0);
+    mat4.perspective(projMatrix, Math.PI * 0.3, app.width / app.height, 0.1, 100.0);
     let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 5), vec3.fromValues(0, 0, 0), time * camRotSpeed);
     mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
@@ -317,7 +319,7 @@ function updateYDirection(cube) {
             cube.bounceYCounter += 1;
             cube.rotationSpeedY = getRandomSpeedRotation();
             cube.bouncedY = true;
-            if (cubeCount < 10) {
+            if (cubeCount < maxCubeAmount) {
                 cube.cubeSize += 1;
             }
         }
