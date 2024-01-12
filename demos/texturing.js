@@ -104,13 +104,27 @@ let skyboxViewProjectionInverse = mat4.create();
 let translateVector = vec3.create();
 
 let cubes = [];
-let cubeTextures = ["steel.jpg", "art.jpg", "ash.jpg", "ice.jpg", "pastry.jpg", "plant.jpg", "wood.jpg", "abstract.jpg"];
+let textureFiles = ["steel.jpg", "print.jpg", "wood.jpg", "flowers.png", "colorful.jpg", "ink.jpg", "leek.jpg", "chicken.jpg", "mountains.jpg", "fox.jpg"];
+let drawCalls = [];
+for (const t of textureFiles) {
+    const tex = await loadTexture(t);
+    const texture = app.createTexture2D(tex, tex.width, tex.height, {
+        magFilter: PicoGL.NEAREST,
+        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
+        maxAnisotropy: 10,
+        wrapS: PicoGL.REPEAT,
+        wrapT: PicoGL.MIRRORED_REPEAT
+    });
+    drawCalls.push(app.createDrawCall(program, vertexArray)
+        .texture("tex", texture));
+}
 
 let cubeCount = 1;
 let previousTime = 0;
 
 const camRotSpeed = 0.1;
 const maxCubeAmount = 6;
+const maxBounceAmount = 8;
 
 function createCube(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, textureSize, childMovingXDirection) {
     let newCube = {
@@ -134,7 +148,7 @@ function createCube(rotationX, rotationY, rotationSpeedX, rotationSpeedY, direct
         translateYBoundary: translateYBoundary,
         childCubeCreated: false,
         cubeTextureChanged: false,
-        texturePicture: texture,
+        textureIndex: texture,
         cubeSize: size,
         textureSize: textureSize,
         childMovingXDirection: childMovingXDirection
@@ -143,22 +157,12 @@ function createCube(rotationX, rotationY, rotationSpeedX, rotationSpeedY, direct
 }
 
 if (cubes.length === 0) {
-    createCube(0, 0, 0, 0, 0.5, 0.5, 'right', 'up', 1, 1, 0, 0, 0, 0, cubeTextures[4], 2, 1, 'left');
+    createCube(0, 0, 0, 0, 0.5, 0.5, 'right', 'up', 1, 1, 0, 0, 0, 0, 4, 4, 1, 'left');
 }
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
 }
-
-const tex = await loadTexture(cubeTextures[1]);
-let drawCall = app.createDrawCall(program, vertexArray)
-    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
-        magFilter: PicoGL.NEAREST,
-        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
-        maxAnisotropy: 10,
-        wrapS: PicoGL.MIRRORED_REPEAT,
-        wrapT: PicoGL.MIRRORED_REPEAT
-    }));
     
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
     .texture("cubemap", app.createCubemap({
@@ -171,37 +175,29 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
     }));
 
 async function createChildCube(cube) {
-    if (cube.bounceYCounter % 5 === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0 && cubeCount < maxCubeAmount) {
-        cube.cubeSize = Math.floor((cube.cubeSize + 1) * 0.5);
+    if (cube.bounceYCounter % maxBounceAmount === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0 && cubeCount < maxCubeAmount) {
+        cube.cubeSize = cube.cubeSize % 2 === 0 ? Math.floor((cube.cubeSize) * 0.25) : Math.floor((cube.cubeSize + 1) * 0.5);
         cube.speedX *= 2;
         cube.speedY *= 2;
         cube.rotationSpeedX *= 0.5;
         cube.rotationSpeedY *= 0.5;
 
-        createCube(-cube.rotationX, -cube.rotationY, cube.rotationSpeedX, cube.rotationSpeedY, cube.directionX, cube.directionY, cube.childMovingXDirection, cube.childMovingYDirection, cube.speedX, cube.speedY, cube.translationX, cube.translationY, cube.translateXBoundary, cube.translateYBoundary, cube.texturePicture, cube.cubeSize, cube.textureSize, cube.movingXDirection);
+        createCube(-cube.rotationX, -cube.rotationY, cube.rotationSpeedX, cube.rotationSpeedY, cube.directionX, cube.directionY, cube.childMovingXDirection, cube.childMovingYDirection, cube.speedX, cube.speedY, cube.translationX, cube.translationY, cube.translateXBoundary, cube.translateYBoundary, cube.textureIndex, cube.cubeSize, cube.textureSize, cube.movingXDirection);
        
         cube.childCubeCreated = true;
         cubeCount += 1;
-    } else if (cube.bounceYCounter % 5 !== 0) {
+    } else if (cube.bounceYCounter % maxBounceAmount !== 0) {
         cube.childCubeCreated = false;
     }
 }
 
 async function changeCubeTexture(cube) {
-    if (cube.bounceXCounter % 5 === 0 && !cube.cubeTextureChanged && cube.bounceXCounter !== 0) {
-        const randomIndex = Math.floor(Math.random() * cubeTextures.length);
-        const newTexture = await loadTexture(cubeTextures[randomIndex]);
-        cube.texturePicture = cubeTextures[randomIndex];
-        /*drawCall.texture("tex", app.createTexture2D(newTexture, newTexture.width, newTexture.height, {
-            magFilter: PicoGL.NEAREST,
-            minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
-            maxAnisotropy: 10,
-            wrapS: PicoGL.MIRRORED_REPEAT,
-            wrapT: PicoGL.MIRRORED_REPEAT
-        }));*/
+    if (cube.bounceXCounter % (maxBounceAmount * 0.25) === 0 && !cube.cubeTextureChanged && cube.bounceXCounter !== 0) {
+        const randomIndex = Math.floor(Math.random() * textureFiles.length);
+        cube.textureIndex = randomIndex;
         cube.textureSize = 1;
         cube.cubeTextureChanged = true;
-    } else if (cube.bounceXCounter % 5 !== 0) {
+    } else if (cube.bounceXCounter % (maxBounceAmount * 0.25) !== 0) {
         cube.cubeTextureChanged = false;
     }
 }
@@ -229,18 +225,22 @@ async function updateCube(cube, deltaTime, time) {
 
     changeTextureSize(cube);
     changeCubeSize(cube);
+    drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     drawCall.draw();
 }
 
 async function drawCubes(deltaTime, time) {
     for (let i = 0; i < cubes.length; i++) {
         let cube = cubes[i];
+        drawCall = drawCalls[cube.textureIndex];
 
         await updateCube(cube, deltaTime, time);
         await createChildCube(cube);
         await changeCubeTexture(cube);
     }
 }
+
+let drawCall;
 
 function draw(timems) {
     const time = timems * 0.001;
@@ -263,12 +263,10 @@ function draw(timems) {
     skyboxDrawCall.uniform("viewProjectionInverse", skyboxViewProjectionInverse);
     skyboxDrawCall.draw();
 
-    app.enable(PicoGL.DEPTH_TEST);
+    app.disable(PicoGL.DEPTH_TEST);
     app.enable(PicoGL.CULL_FACE);
 
     drawCubes(deltaTime, time);
-
-    drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
 
     requestAnimationFrame(draw);
 
