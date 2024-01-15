@@ -7,7 +7,14 @@
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import { mat4, vec3 } from "../node_modules/gl-matrix/esm/index.js";
 
-import { positions, uvs, indices } from "../blender/cube.js";
+
+//import { positions, uvs, indices } from "../blender/cube.js";
+
+
+import { positions as cubePositions, uvs as cubeUvs, indices as cubeIndices } from "../blender/cube.js";
+import { positions as spherePositions, uvs as sphereUvs, indices as sphereIndices } from "../blender/sphere.js";
+
+
 import { positions as planePositions, indices as planeIndices } from "../blender/plane.js";
 
 // language=GLSL
@@ -79,6 +86,19 @@ let skyboxVertexShader = `
     }
 `;
 
+let useCubeGeometry = false;
+
+let positions, uvs, indices;
+if (useCubeGeometry) {
+    positions = cubePositions;
+    uvs = cubeUvs;
+    indices = cubeIndices;
+} else {
+    positions = spherePositions;
+    uvs = sphereUvs;
+    indices = sphereIndices;
+}
+
 let program = app.createProgram(vertexShader.trim(), fragmentShader.trim());
 let skyboxProgram = app.createProgram(skyboxVertexShader.trim(), skyboxFragmentShader.trim());
 
@@ -123,7 +143,7 @@ let objectCount = 1;
 let previousTime = 0;
 
 const camRotSpeed = 0.1;
-const maxObjectsAmount = 6;
+const maxObjectsAmount = 3;
 const maxBounceAmount = 8;
 
 function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, textureSize, childMovingXDirection) {
@@ -237,6 +257,9 @@ async function drawObjects(deltaTime, time) {
         await updateObject(object, deltaTime, time);
         await createChild(object);
         await changeTexture(object);
+    }
+    if (objectCount === maxObjectsAmount) {
+        useCubeGeometry = false;
     }
 }
 
