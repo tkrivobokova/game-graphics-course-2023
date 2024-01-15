@@ -104,7 +104,7 @@ let skyboxViewProjectionInverse = mat4.create();
 let translateVector = vec3.create();
 
 let cubes = [];
-let textureFiles = ["steel.jpg", "print.jpg", "wood.jpg", "flowers.png", "colorful.jpg", "ink.jpg", "leek.jpg", "chicken.jpg", "mountains.jpg", "fox.jpg"];
+let textureFiles = ["color.jpg", "night.jpg", "abstract.jpg", "flowers.png", "canyon.jpg", "colorful.jpg", "mercury.jpg", "watercolor.jpg", "yellow.jpg", "red.jpg"];
 let drawCalls = [];
 for (const t of textureFiles) {
     const tex = await loadTexture(t);
@@ -112,7 +112,7 @@ for (const t of textureFiles) {
         magFilter: PicoGL.NEAREST,
         minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
         maxAnisotropy: 10,
-        wrapS: PicoGL.REPEAT,
+        wrapS: PicoGL.MIRRORED_REPEAT,
         wrapT: PicoGL.MIRRORED_REPEAT
     });
     drawCalls.push(app.createDrawCall(program, vertexArray)
