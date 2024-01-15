@@ -33,7 +33,7 @@ let vertexShader = `
     #version 300 es
             
     uniform mat4 modelViewProjectionMatrix;
-    uniform float cubeSize;
+    uniform float objectSize;
     
     layout(location=0) in vec3 position;
     layout(location=1) in vec3 normal;
@@ -43,7 +43,7 @@ let vertexShader = `
     
     void main()
     {
-        gl_Position = modelViewProjectionMatrix * vec4(position * cubeSize, 1.0);           
+        gl_Position = modelViewProjectionMatrix * vec4(position * objectSize, 1.0);           
         v_uv = uv;
     }
 `;
@@ -103,7 +103,7 @@ let skyboxViewProjectionInverse = mat4.create();
 
 let translateVector = vec3.create();
 
-let cubes = [];
+let objects = [];
 let textureFiles = ["color.jpg", "night.jpg", "abstract.jpg", "flowers.png", "canyon.jpg", "colorful.jpg", "mercury.jpg", "watercolor.jpg", "yellow.jpg", "red.jpg"];
 let drawCalls = [];
 for (const t of textureFiles) {
@@ -119,15 +119,15 @@ for (const t of textureFiles) {
         .texture("tex", texture));
 }
 
-let cubeCount = 1;
+let objectCount = 1;
 let previousTime = 0;
 
 const camRotSpeed = 0.1;
-const maxCubeAmount = 6;
+const maxObjectsAmount = 6;
 const maxBounceAmount = 8;
 
-function createCube(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, textureSize, childMovingXDirection) {
-    let newCube = {
+function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, textureSize, childMovingXDirection) {
+    let newObject = {
         rotationX: rotationX,
         rotationY: rotationY,
         rotationSpeedX: rotationSpeedX,
@@ -146,24 +146,24 @@ function createCube(rotationX, rotationY, rotationSpeedX, rotationSpeedY, direct
         speedY: speedY,
         translateXBoundary: translateXBoundary,
         translateYBoundary: translateYBoundary,
-        childCubeCreated: false,
-        cubeTextureChanged: false,
+        childCreated: false,
+        textureChanged: false,
         textureIndex: texture,
-        cubeSize: size,
+        objectSize: size,
         textureSize: textureSize,
         childMovingXDirection: childMovingXDirection
     };
-    cubes.push(newCube);
+    objects.push(newObject);
 }
 
-if (cubes.length === 0) {
-    createCube(0, 0, 0, 0, 0.5, 0.5, 'right', 'up', 1, 1, 0, 0, 0, 0, 4, 4, 1, 'left');
+if (objects.length === 0) {
+    createObject(0, 0, 0, 0, 0.5, 0.5, 'right', 'up', 1, 1, 0, 0, 0, 0, 4, 4, 1, 'left');
 }
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
 }
-    
+
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
     .texture("cubemap", app.createCubemap({
         negX: await loadTexture("nx.png"),
@@ -174,45 +174,45 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
         posZ: await loadTexture("pz.png")
     }));
 
-async function createChildCube(cube) {
-    if (cube.bounceYCounter % maxBounceAmount === 0 && !cube.childCubeCreated && cube.bounceYCounter !== 0 && cubeCount < maxCubeAmount) {
-        cube.cubeSize = cube.cubeSize % 2 === 0 ? Math.floor((cube.cubeSize) * 0.25) : Math.floor((cube.cubeSize + 1) * 0.5);
-        cube.speedX *= 2;
-        cube.speedY *= 2;
-        cube.rotationSpeedX *= 0.5;
-        cube.rotationSpeedY *= 0.5;
+async function createChild(object) {
+    if (object.bounceYCounter % maxBounceAmount === 0 && !object.childCreated && object.bounceYCounter !== 0 && objectCount < maxObjectsAmount) {
+        object.objectSize = object.objectSize % 2 === 0 ? Math.floor((object.objectSize) * 0.25) : Math.floor((object.objectSize + 1) * 0.5);
+        object.speedX *= 2;
+        object.speedY *= 2;
+        object.rotationSpeedX *= 0.5;
+        object.rotationSpeedY *= 0.5;
 
-        createCube(-cube.rotationX, -cube.rotationY, cube.rotationSpeedX, cube.rotationSpeedY, cube.directionX, cube.directionY, cube.childMovingXDirection, cube.childMovingYDirection, cube.speedX, cube.speedY, cube.translationX, cube.translationY, cube.translateXBoundary, cube.translateYBoundary, cube.textureIndex, cube.cubeSize, cube.textureSize, cube.movingXDirection);
-       
-        cube.childCubeCreated = true;
-        cubeCount += 1;
-    } else if (cube.bounceYCounter % maxBounceAmount !== 0) {
-        cube.childCubeCreated = false;
+        createObject(-object.rotationX, -object.rotationY, object.rotationSpeedX, object.rotationSpeedY, object.directionX, object.directionY, object.childMovingXDirection, object.childMovingYDirection, object.speedX, object.speedY, object.translationX, object.translationY, object.translateXBoundary, object.translateYBoundary, object.textureIndex, object.objectSize, object.textureSize, object.movingXDirection);
+
+        object.childCreated = true;
+        objectCount += 1;
+    } else if (object.bounceYCounter % maxBounceAmount !== 0) {
+        object.childCreated = false;
     }
 }
 
-async function changeCubeTexture(cube) {
-    if (cube.bounceXCounter % (maxBounceAmount * 0.25) === 0 && !cube.cubeTextureChanged && cube.bounceXCounter !== 0) {
+async function changeTexture(object) {
+    if (object.bounceXCounter % (maxBounceAmount * 0.25) === 0 && !object.textureChanged && object.bounceXCounter !== 0) {
         const randomIndex = Math.floor(Math.random() * textureFiles.length);
-        cube.textureIndex = randomIndex;
-        cube.textureSize = 1;
-        cube.cubeTextureChanged = true;
-    } else if (cube.bounceXCounter % (maxBounceAmount * 0.25) !== 0) {
-        cube.cubeTextureChanged = false;
+        object.textureIndex = randomIndex;
+        object.textureSize = 1;
+        object.textureChanged = true;
+    } else if (object.bounceXCounter % (maxBounceAmount * 0.25) !== 0) {
+        object.textureChanged = false;
     }
 }
 
-async function updateCube(cube, deltaTime, time) {
-    cube.rotationX += deltaTime * cube.rotationSpeedX;
-    cube.rotationY += deltaTime * cube.rotationSpeedY;
+async function updateObject(object, deltaTime, time) {
+    object.rotationX += deltaTime * object.rotationSpeedX;
+    object.rotationY += deltaTime * object.rotationSpeedY;
 
-    chooseMovingDirection(cube, deltaTime);
+    chooseMovingDirection(object, deltaTime);
 
-    let cubePos = vec3.rotateY(vec3.create(), [cube.translationX, cube.translationY, 0.0], vec3.fromValues(0, 0, 0), time * camRotSpeed);
-    mat4.translate(modelMatrix, mat4.create(), cubePos);
+    let objectPos = vec3.rotateY(vec3.create(), [object.translationX, object.translationY, 0.0], vec3.fromValues(0, 0, 0), time * camRotSpeed);
+    mat4.translate(modelMatrix, mat4.create(), objectPos);
 
-    mat4.fromXRotation(rotateXMatrix, cube.rotationX);
-    mat4.fromZRotation(rotateYMatrix, cube.rotationY);
+    mat4.fromXRotation(rotateXMatrix, object.rotationX);
+    mat4.fromZRotation(rotateYMatrix, object.rotationY);
     mat4.multiply(modelMatrix, modelMatrix, rotateXMatrix);
     mat4.multiply(modelMatrix, modelMatrix, rotateYMatrix);
 
@@ -220,23 +220,23 @@ async function updateCube(cube, deltaTime, time) {
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
 
     vec3.transformMat4(translateVector, vec3.create(), modelViewProjectionMatrix);
-    cube.translateXBoundary = translateVector[0];
-    cube.translateYBoundary = translateVector[1];
+    object.translateXBoundary = translateVector[0];
+    object.translateYBoundary = translateVector[1];
 
-    changeTextureSize(cube);
-    changeCubeSize(cube);
+    changeTextureSize(object);
+    changeobjectSize(object);
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     drawCall.draw();
 }
 
-async function drawCubes(deltaTime, time) {
-    for (let i = 0; i < cubes.length; i++) {
-        let cube = cubes[i];
-        drawCall = drawCalls[cube.textureIndex];
+async function drawObjects(deltaTime, time) {
+    for (let i = 0; i < objects.length; i++) {
+        let object = objects[i];
+        drawCall = drawCalls[object.textureIndex];
 
-        await updateCube(cube, deltaTime, time);
-        await createChildCube(cube);
-        await changeCubeTexture(cube);
+        await updateObject(object, deltaTime, time);
+        await createChild(object);
+        await changeTexture(object);
     }
 }
 
@@ -266,63 +266,63 @@ function draw(timems) {
     app.disable(PicoGL.DEPTH_TEST);
     app.enable(PicoGL.CULL_FACE);
 
-    drawCubes(deltaTime, time);
+    drawObjects(deltaTime, time);
 
     requestAnimationFrame(draw);
 
 }
 requestAnimationFrame(draw);
 
-function chooseMovingDirection(cube, deltaTime) {
-    updateYDirection(cube);
-    updateXDirection(cube);
+function chooseMovingDirection(object, deltaTime) {
+    updateYDirection(object);
+    updateXDirection(object);
 
-    if (cube.movingXDirection === 'right') {
-        cube.translationX += cube.directionX * deltaTime * cube.speedX;
-        cube.childMovingXDirection = 'left';
+    if (object.movingXDirection === 'right') {
+        object.translationX += object.directionX * deltaTime * object.speedX;
+        object.childMovingXDirection = 'left';
     } else {
-        cube.translationX += -cube.directionX * deltaTime * cube.speedX;
-        cube.childMovingXDirection = 'right';
+        object.translationX += -object.directionX * deltaTime * object.speedX;
+        object.childMovingXDirection = 'right';
     }
 
-    if (cube.movingYDirection === 'up') {
-        cube.translationY += cube.directionY * deltaTime * cube.speedY;
+    if (object.movingYDirection === 'up') {
+        object.translationY += object.directionY * deltaTime * object.speedY;
     } else {
-        cube.translationY += -cube.directionY * deltaTime * cube.speedY;
+        object.translationY += -object.directionY * deltaTime * object.speedY;
     }
 }
 
-function updateXDirection(cube) {
-    if (cube.translateXBoundary > 1.00 || cube.translateXBoundary < -1.00) {
-        cube.movingXDirection = cube.translateXBoundary > 1.00 ? 'left' : 'right';
-        cube.directionX = getRandomDirection();
-        cube.speedX = getRandomSpeed();
-        if (!cube.bouncedX) {
-            cube.bounceXCounter += 1;
-            cube.textureSize += 1;
-            cube.rotationSpeedX = getRandomSpeedRotation();
-            cube.bouncedX = true;
+function updateXDirection(object) {
+    if (object.translateXBoundary > 1.00 || object.translateXBoundary < -1.00) {
+        object.movingXDirection = object.translateXBoundary > 1.00 ? 'left' : 'right';
+        object.directionX = getRandomDirection();
+        object.speedX = getRandomSpeed();
+        if (!object.bouncedX) {
+            object.bounceXCounter += 1;
+            object.textureSize += 1;
+            object.rotationSpeedX = getRandomSpeedRotation();
+            object.bouncedX = true;
         }
     } else {
-        cube.bouncedX = false;
+        object.bouncedX = false;
     }
 }
 
-function updateYDirection(cube) {
-    if (cube.translateYBoundary > 1.00 || cube.translateYBoundary < -1.00) {
-        cube.movingYDirection = cube.translateYBoundary > 1.00 ? 'bottom' : 'up';
-        cube.directionY = getRandomDirection();
-        cube.speedY = getRandomSpeed();
-        if (!cube.bouncedY) {
-            cube.bounceYCounter += 1;
-            cube.rotationSpeedY = getRandomSpeedRotation();
-            cube.bouncedY = true;
-            if (cubeCount < maxCubeAmount) {
-                cube.cubeSize += 1;
+function updateYDirection(object) {
+    if (object.translateYBoundary > 1.00 || object.translateYBoundary < -1.00) {
+        object.movingYDirection = object.translateYBoundary > 1.00 ? 'bottom' : 'up';
+        object.directionY = getRandomDirection();
+        object.speedY = getRandomSpeed();
+        if (!object.bouncedY) {
+            object.bounceYCounter += 1;
+            object.rotationSpeedY = getRandomSpeedRotation();
+            object.bouncedY = true;
+            if (objectCount < maxObjectsAmount) {
+                object.objectSize += 1;
             }
         }
     } else {
-        cube.bouncedY = false;
+        object.bouncedY = false;
     }
 }
 
@@ -338,10 +338,10 @@ function getRandomSpeedRotation() {
     return Math.floor(Math.random() * -10);
 }
 
-function changeTextureSize(cube) {
-    drawCall.uniform("textureSize", cube.textureSize);
+function changeTextureSize(object) {
+    drawCall.uniform("textureSize", object.textureSize);
 }
 
-function changeCubeSize(cube) {
-    drawCall.uniform("cubeSize", cube.cubeSize * 0.1);
+function changeobjectSize(object) {
+    drawCall.uniform("objectSize", object.objectSize * 0.1);
 }
