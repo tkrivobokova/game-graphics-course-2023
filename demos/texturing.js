@@ -213,10 +213,19 @@ async function createChild(object) {
 
 async function changeTexture(object) {
     if (object.bounceXCounter % (maxBounceAmount * 0.25) === 0 && !object.textureChanged && object.bounceXCounter !== 0) {
-        const randomIndex = Math.floor(Math.random() * textureFiles.length);
+        let previousIndex = object.textureIndex;
+        let randomIndex;
+
+        do {
+            randomIndex = Math.floor(Math.random() * textureFiles.length);
+        }
+        while (randomIndex === previousIndex);
+
         object.textureIndex = randomIndex;
         object.textureSize = 1;
         object.textureChanged = true;
+
+        return randomIndex;
     } else if (object.bounceXCounter % (maxBounceAmount * 0.25) !== 0) {
         object.textureChanged = false;
     }
