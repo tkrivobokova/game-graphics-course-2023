@@ -85,9 +85,8 @@ let skyboxVertexShader = `
     }
 `;
 
-let useCubeGeometry = false;
-
 let positions, uvs, indices;
+/*
 if (useCubeGeometry) {
     positions = cubePositions;
     uvs = cubeUvs;
@@ -97,14 +96,14 @@ if (useCubeGeometry) {
     uvs = sphereUvs;
     indices = sphereIndices;
 }
-
+*/
 let program = app.createProgram(vertexShader.trim(), fragmentShader.trim());
 let skyboxProgram = app.createProgram(skyboxVertexShader.trim(), skyboxFragmentShader.trim());
 
-let vertexArray = app.createVertexArray()
+/*let vertexArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, positions))
     .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, uvs))
-    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, indices));
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, indices));*/
 
 let skyboxArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions))
@@ -124,7 +123,32 @@ let translateVector = vec3.create();
 
 let objects = [];
 let textureFiles = ["color.jpg", "night.jpg", "abstract.jpg", "flowers.png", "canyon.jpg", "colorful.jpg", "mercury.jpg", "watercolor.jpg", "yellow.jpg", "red.jpg"];
+let geometries = ['cube', 'sphere'];
 let drawCalls = [];
+let vertexArrays = [];
+
+
+for (const g of geometries) {
+    switch (g) {
+        case 'cube':
+            positions = cubePositions;
+            uvs = cubeUvs;
+            indices = cubeIndices;
+            break;
+
+        case 'sphere':
+            positions = spherePositions;
+            uvs = sphereUvs;
+            indices = sphereIndices;
+            break;
+    }
+    let vertexArray;
+    vertexArrays.push(vertexArray = app.createVertexArray()
+        .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, positions))
+        .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, uvs))
+        .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, indices)));
+}
+
 for (const t of textureFiles) {
     const tex = await loadTexture(t);
     const texture = app.createTexture2D(tex, tex.width, tex.height, {
@@ -134,8 +158,10 @@ for (const t of textureFiles) {
         wrapS: PicoGL.MIRRORED_REPEAT,
         wrapT: PicoGL.MIRRORED_REPEAT
     });
-    drawCalls.push(app.createDrawCall(program, vertexArray)
-        .texture("tex", texture));
+    for (const v of vertexArrays) {
+        drawCalls.push(app.createDrawCall(program, v)
+            .texture("tex", texture));
+    }
 }
 
 let objectCount = 1;
@@ -176,7 +202,9 @@ function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, dire
         stretchX: stretchX,
         stretchY: stretchY,
         stretchZ: stretchZ,
-        stretchCounter: 0
+        stretchCounter: 0,
+        geometry: 'sphere',
+        geometryChanged: false
     };
     objects.push(newObject);
 }
@@ -256,6 +284,16 @@ async function changeTexture(object) {
     }
 }
 
+async function changeGeometry(object) {
+    if (object.bounceXCounter % (maxBounceAmount * 0.25) === 0 && !object.geometryChanged) {
+        object.geometry === 'sphere' ? 'cube' : 'sphere';
+        console.log('object count: ' + objectCount);
+        object.geometryChanged = true;
+    } else if (object.bounceXCounter % (maxBounceAmount * 0.25) !== 0) {
+        object.geometryChanged = false;
+    }
+}
+
 async function updateObject(object, deltaTime, time) {
     object.rotationX += deltaTime * object.rotationSpeedX;
     object.rotationY += deltaTime * object.rotationSpeedY;
@@ -294,8 +332,10 @@ async function drawObjects(deltaTime, time) {
         await updateObject(object, deltaTime, time);
         objectCount < maxObjectsAmount ? await createChild(object) : await stretchObject(object);
         await changeTexture(object);
+        if (objectCount === maxObjectsAmount) {
+            await changeGeometry(object);
+        }
     }
-    objectCount === maxObjectsAmount ? useCubeGeometry = false : useCubeGeometry = true;
 }
 
 let drawCall;
