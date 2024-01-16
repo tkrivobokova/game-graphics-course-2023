@@ -41,7 +41,10 @@ let vertexShader = `
             
     uniform mat4 modelViewProjectionMatrix;
     uniform float objectSize;
-    
+    uniform float stretchXFactor;
+    uniform float stretchYFactor;
+    uniform float stretchZFactor;
+
     layout(location=0) in vec3 position;
     layout(location=1) in vec3 normal;
     layout(location=2) in vec2 uv;
@@ -50,7 +53,9 @@ let vertexShader = `
     
     void main()
     {
-        gl_Position = modelViewProjectionMatrix * vec4(position * objectSize, 1.0);           
+        vec3 objectPosition = vec3(position.x * stretchXFactor, position.y * stretchYFactor, position.z * stretchZFactor);
+
+        gl_Position = modelViewProjectionMatrix * vec4(objectPosition * objectSize, 1.0);           
         v_uv = uv;
     }
 `;
@@ -141,12 +146,12 @@ for (const t of textureFiles) {
 
 let objectCount = 1;
 let previousTime = 0;
+let camRotSpeed = 0.2;
 
-const camRotSpeed = 0.1;
-const maxObjectsAmount = 3;
+const maxObjectsAmount = 6;
 const maxBounceAmount = 8;
 
-function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, textureSize, childMovingXDirection) {
+function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, textureSize, childMovingXDirection, stretchX, stretchY, stretchZ) {
     let newObject = {
         rotationX: rotationX,
         rotationY: rotationY,
@@ -167,17 +172,21 @@ function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, dire
         translateXBoundary: translateXBoundary,
         translateYBoundary: translateYBoundary,
         childCreated: false,
+        objectStretched: false,
         textureChanged: false,
         textureIndex: texture,
         objectSize: size,
         textureSize: textureSize,
-        childMovingXDirection: childMovingXDirection
+        childMovingXDirection: childMovingXDirection,
+        stretchX: stretchX,
+        stretchY: stretchY,
+        stretchZ: stretchZ
     };
     objects.push(newObject);
 }
 
 if (objects.length === 0) {
-    createObject(0, 0, 0, 0, 0.5, 0.5, 'right', 'up', 1, 1, 0, 0, 0, 0, 4, 4, 1, 'left');
+    createObject(0, 0, 0, 0, 0.5, 0.5, 'right', 'up', 1, 1, 0, 0, 0, 0, getRandomTextureIndex(), 4, 1, 'left', 1.0, 1.0, 1.0);
 }
 
 async function loadTexture(fileName) {
@@ -202,12 +211,25 @@ async function createChild(object) {
         object.rotationSpeedX *= 0.5;
         object.rotationSpeedY *= 0.5;
 
-        createObject(-object.rotationX, -object.rotationY, object.rotationSpeedX, object.rotationSpeedY, object.directionX, object.directionY, object.childMovingXDirection, object.childMovingYDirection, object.speedX, object.speedY, object.translationX, object.translationY, object.translateXBoundary, object.translateYBoundary, object.textureIndex, object.objectSize, object.textureSize, object.movingXDirection);
+        createObject(-object.rotationX, -object.rotationY, object.rotationSpeedX, object.rotationSpeedY, object.directionX, object.directionY, object.childMovingXDirection, object.childMovingYDirection, object.speedX, object.speedY, object.translationX, object.translationY, object.translateXBoundary, object.translateYBoundary, object.textureIndex, object.objectSize, object.textureSize, object.movingXDirection, object.stretchX, object.stretchY, object.stretchZ);
 
         object.childCreated = true;
         objectCount += 1;
     } else if (object.bounceYCounter % maxBounceAmount !== 0) {
         object.childCreated = false;
+    }
+}
+
+async function stretchObject(object) {
+    if (!object.objectStretched && object.bouncedY) {
+        object.stretchX = getRandomStretch();
+        object.stretchY = getRandomStretch();
+        object.stretchZ = getRandomStretch();
+
+        object.objectStretched = true;
+    }
+    else if (object.bounceYCounter % maxBounceAmount !== 0) {
+        object.objectStretched = false;
     }
 }
 
@@ -217,7 +239,7 @@ async function changeTexture(object) {
         let randomIndex;
 
         do {
-            randomIndex = Math.floor(Math.random() * textureFiles.length);
+            randomIndex = getRandomTextureIndex();
         }
         while (randomIndex === previousIndex);
 
@@ -255,6 +277,9 @@ async function updateObject(object, deltaTime, time) {
     changeTextureSize(object);
     changeobjectSize(object);
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
+    drawCall.uniform("stretchXFactor", object.stretchX);
+    drawCall.uniform("stretchYFactor", object.stretchY);
+    drawCall.uniform("stretchZFactor", object.stretchZ);
     drawCall.draw();
 }
 
@@ -264,7 +289,13 @@ async function drawObjects(deltaTime, time) {
         drawCall = drawCalls[object.textureIndex];
 
         await updateObject(object, deltaTime, time);
-        await createChild(object);
+
+        if (objectCount < maxObjectsAmount) {
+            await createChild(object);
+        } else {
+            await stretchObject(object);
+        }
+
         await changeTexture(object);
     }
     if (objectCount === maxObjectsAmount) {
@@ -368,6 +399,14 @@ function getRandomSpeed() {
 
 function getRandomSpeedRotation() {
     return Math.floor(Math.random() * -10);
+}
+
+function getRandomTextureIndex() {
+    return Math.floor(Math.random() * textureFiles.length);
+}
+
+function getRandomStretch() {
+    return (Math.floor(Math.random() * 10) + 1) * 0.11;
 }
 
 function changeTextureSize(object) {
