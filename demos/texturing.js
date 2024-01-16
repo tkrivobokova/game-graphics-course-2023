@@ -274,7 +274,6 @@ async function updateObject(object, deltaTime, time) {
     drawCall.uniform("stretchXFactor", object.stretchX);
     drawCall.uniform("stretchYFactor", object.stretchY);
     drawCall.uniform("stretchZFactor", object.stretchZ);
-    drawCall.uniform("glossiness", 50.0);
     drawCall.draw();
 }
 
