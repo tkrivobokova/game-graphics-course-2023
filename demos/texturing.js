@@ -7,14 +7,8 @@
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import { mat4, vec3 } from "../node_modules/gl-matrix/esm/index.js";
 
-
-//import { positions, uvs, indices } from "../blender/cube.js";
-
-
 import { positions as cubePositions, uvs as cubeUvs, indices as cubeIndices } from "../blender/cube.js";
 import { positions as spherePositions, uvs as sphereUvs, indices as sphereIndices } from "../blender/sphere.js";
-
-
 import { positions as planePositions, indices as planeIndices } from "../blender/plane.js";
 
 // language=GLSL
@@ -204,7 +198,7 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
     }));
 
 async function createChild(object) {
-    if (object.bounceYCounter % maxBounceAmount === 0 && !object.childCreated && object.bounceYCounter !== 0 && objectCount < maxObjectsAmount) {
+    if (object.bounceYCounter % maxBounceAmount === 0 && !object.childCreated && object.bounceYCounter !== 0) {
         object.objectSize = object.objectSize % 2 === 0 ? Math.floor((object.objectSize) * 0.25) : Math.floor((object.objectSize + 1) * 0.5);
         object.speedX *= 2;
         object.speedY *= 2;
@@ -280,6 +274,7 @@ async function updateObject(object, deltaTime, time) {
     drawCall.uniform("stretchXFactor", object.stretchX);
     drawCall.uniform("stretchYFactor", object.stretchY);
     drawCall.uniform("stretchZFactor", object.stretchZ);
+    drawCall.uniform("glossiness", 50.0);
     drawCall.draw();
 }
 
@@ -289,18 +284,10 @@ async function drawObjects(deltaTime, time) {
         drawCall = drawCalls[object.textureIndex];
 
         await updateObject(object, deltaTime, time);
-
-        if (objectCount < maxObjectsAmount) {
-            await createChild(object);
-        } else {
-            await stretchObject(object);
-        }
-
+        objectCount < maxObjectsAmount ? await createChild(object) : await stretchObject(object);
         await changeTexture(object);
     }
-    if (objectCount === maxObjectsAmount) {
-        useCubeGeometry = false;
-    }
+    objectCount === maxObjectsAmount ? useCubeGeometry = false : useCubeGeometry = true;
 }
 
 let drawCall;
@@ -340,19 +327,9 @@ function chooseMovingDirection(object, deltaTime) {
     updateYDirection(object);
     updateXDirection(object);
 
-    if (object.movingXDirection === 'right') {
-        object.translationX += object.directionX * deltaTime * object.speedX;
-        object.childMovingXDirection = 'left';
-    } else {
-        object.translationX += -object.directionX * deltaTime * object.speedX;
-        object.childMovingXDirection = 'right';
-    }
-
-    if (object.movingYDirection === 'up') {
-        object.translationY += object.directionY * deltaTime * object.speedY;
-    } else {
-        object.translationY += -object.directionY * deltaTime * object.speedY;
-    }
+    object.movingXDirection === 'right' ? object.translationX += object.directionX * deltaTime * object.speedX : object.translationX += -object.directionX * deltaTime * object.speedX;
+    object.movingXDirection === 'right' ? object.childMovingXDirection = 'left' : object.childMovingXDirection = 'right';
+    object.movingYDirection === 'up' ? object.translationY += object.directionY * deltaTime * object.speedY : object.translationY += -object.directionY * deltaTime * object.speedY;
 }
 
 function updateXDirection(object) {
@@ -380,9 +357,8 @@ function updateYDirection(object) {
             object.bounceYCounter += 1;
             object.rotationSpeedY = getRandomSpeedRotation();
             object.bouncedY = true;
-            if (objectCount < maxObjectsAmount) {
-                object.objectSize += 1;
-            }
+            
+            objectCount < maxObjectsAmount ? object.objectSize += 1 : object.objectSize;
         }
     } else {
         object.bouncedY = false;
