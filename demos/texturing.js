@@ -143,6 +143,7 @@ let previousTime = 0;
 let camRotSpeed = 0.2;
 
 const maxObjectsAmount = 6;
+const maxStretchCount = 6;
 const maxBounceAmount = 8;
 
 function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, textureSize, childMovingXDirection, stretchX, stretchY, stretchZ) {
@@ -174,7 +175,8 @@ function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, dire
         childMovingXDirection: childMovingXDirection,
         stretchX: stretchX,
         stretchY: stretchY,
-        stretchZ: stretchZ
+        stretchZ: stretchZ,
+        stretchCounter: 0
     };
     objects.push(newObject);
 }
@@ -215,15 +217,22 @@ async function createChild(object) {
 }
 
 async function stretchObject(object) {
-    if (!object.objectStretched && object.bouncedY) {
-        object.stretchX = getRandomStretch();
-        object.stretchY = getRandomStretch();
-        object.stretchZ = getRandomStretch();
+    if (object.stretchCounter < maxStretchCount) {
+        if (!object.objectStretched && object.bouncedY && object.bounceYCounter % (maxBounceAmount * 0.5) === 0) {
+            object.stretchX = getRandomStretch();
+            object.stretchY = getRandomStretch();
+            object.stretchZ = getRandomStretch();
 
-        object.objectStretched = true;
-    }
-    else if (object.bounceYCounter % maxBounceAmount !== 0) {
-        object.objectStretched = false;
+            object.objectStretched = true;
+            object.stretchCounter += 1;
+        }
+        else if (object.bounceYCounter % maxBounceAmount !== 0) {
+            object.objectStretched = false;
+        }
+    } else {
+        object.stretchX = 1.0;
+        object.stretchY = 1.0;
+        object.stretchZ = 1.0;
     }
 }
 
@@ -356,7 +365,7 @@ function updateYDirection(object) {
             object.bounceYCounter += 1;
             object.rotationSpeedY = getRandomSpeedRotation();
             object.bouncedY = true;
-            
+
             objectCount < maxObjectsAmount ? object.objectSize += 1 : object.objectSize;
         }
     } else {
@@ -381,7 +390,7 @@ function getRandomTextureIndex() {
 }
 
 function getRandomStretch() {
-    return (Math.floor(Math.random() * 10) + 1) * 0.11;
+    return (Math.floor(Math.random() * 10) + 1) * 0.2;
 }
 
 function changeTextureSize(object) {
