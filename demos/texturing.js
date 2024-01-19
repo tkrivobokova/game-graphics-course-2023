@@ -62,13 +62,38 @@ let skyboxFragmentShader = `
     
     uniform samplerCube cubemap;
     uniform mat4 viewProjectionInverse;
+    uniform float objectCount;
     in vec4 v_position;
     
     out vec4 outColor;
     
     void main() {
       vec4 t = viewProjectionInverse * v_position;
-      outColor = texture(cubemap, normalize(t.xyz / t.w));
+      vec3 ndc = normalize(t.xyz / t.w);
+
+      // Define vibrant psychedelic colors
+      vec3 color1 = vec3(1.0, 0.0, 1.0);   // Vibrant Magenta
+      vec3 color2 = vec3(0.0, 1.0, 1.0);   // Vibrant Cyan
+      vec3 color3 = vec3(1.0, 0.5, 0.0);   // Vibrant Orange
+      vec3 color4 = vec3(0.0, 1.0, 0.0);   // Vibrant Green
+
+      // Calculate a smooth gradient for color interpolation
+      float gradient = clamp(1.0 - abs(ndc.y * 2.0), 0.0, 1.0);
+      
+      // Interpolate between vibrant psychedelic colors based on the gradient
+        vec3 vibrantPsychedelicColor = mix(color1, color2, gradient);
+        vibrantPsychedelicColor = mix(vibrantPsychedelicColor, color3, gradient);
+        vibrantPsychedelicColor = mix(vibrantPsychedelicColor, color4, gradient);
+        
+
+        vec4 skyColor = texture(cubemap, ndc);
+        float alpha = 0.5;
+
+        if (objectCount >= 6.0) {
+            outColor = vec4(mix(skyColor.rgb, vibrantPsychedelicColor, 0.5), alpha);
+        } else {
+            outColor = texture(cubemap, normalize(t.xyz / t.w));
+        }
     }
 `;
 
@@ -164,7 +189,7 @@ for (const t of textureFiles) {
     }
 }
 
-let objectCount = 1;
+let objectCount = 1.0;
 let previousTime = 0;
 let camRotSpeed = 0.2;
 
@@ -223,7 +248,8 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
         posY: await loadTexture("py.png"),
         negZ: await loadTexture("nz.png"),
         posZ: await loadTexture("pz.png")
-    }));
+    }))
+    .uniform("objectCount", objectCount);
 
 async function createChild(object) {
     if (object.bounceYCounter % maxBounceAmount === 0 && !object.childCreated && object.bounceYCounter !== 0) {
@@ -236,7 +262,7 @@ async function createChild(object) {
         createObject(-object.rotationX, -object.rotationY, object.rotationSpeedX, object.rotationSpeedY, object.directionX, object.directionY, object.childMovingXDirection, object.childMovingYDirection, object.speedX, object.speedY, object.translationX, object.translationY, object.translateXBoundary, object.translateYBoundary, object.textureIndex, object.objectSize, object.textureSize, object.movingXDirection, object.stretchX, object.stretchY, object.stretchZ);
 
         object.childCreated = true;
-        objectCount += 1;
+        objectCount += 1.0;
     } else if (object.bounceYCounter % maxBounceAmount !== 0) {
         object.childCreated = false;
     }
@@ -316,6 +342,8 @@ async function drawObjects(deltaTime, time) {
     for (let i = 0; i < objects.length; i++) {
         let object = objects[i];
         drawCall = drawCalls[object.textureIndex];
+
+        drawCall.uniform("objectCount", 6.0);
 
         await updateObject(object, deltaTime, time);
         objectCount < maxObjectsAmount ? await createChild(object) : await stretchObject(object);
