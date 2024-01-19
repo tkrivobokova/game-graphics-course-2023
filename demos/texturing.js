@@ -202,9 +202,7 @@ function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, dire
         stretchX: stretchX,
         stretchY: stretchY,
         stretchZ: stretchZ,
-        stretchCounter: 0,
-        geometry: 'sphere',
-        geometryChanged: false
+        stretchCounter: 0
     };
     objects.push(newObject);
 }
@@ -284,16 +282,6 @@ async function changeTexture(object) {
     }
 }
 
-async function changeGeometry(object) {
-    if (object.bounceXCounter % (maxBounceAmount * 0.25) === 0 && !object.geometryChanged) {
-        object.geometry === 'sphere' ? 'cube' : 'sphere';
-        console.log('object count: ' + objectCount);
-        object.geometryChanged = true;
-    } else if (object.bounceXCounter % (maxBounceAmount * 0.25) !== 0) {
-        object.geometryChanged = false;
-    }
-}
-
 async function updateObject(object, deltaTime, time) {
     object.rotationX += deltaTime * object.rotationSpeedX;
     object.rotationY += deltaTime * object.rotationSpeedY;
@@ -332,9 +320,6 @@ async function drawObjects(deltaTime, time) {
         await updateObject(object, deltaTime, time);
         objectCount < maxObjectsAmount ? await createChild(object) : await stretchObject(object);
         await changeTexture(object);
-        if (objectCount === maxObjectsAmount) {
-            await changeGeometry(object);
-        }
     }
 }
 
