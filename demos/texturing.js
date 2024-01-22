@@ -54,7 +54,6 @@ let vertexShader = `
     }
 `;
 
-
 // language=GLSL
 let skyboxFragmentShader = `
     #version 300 es
@@ -71,29 +70,31 @@ let skyboxFragmentShader = `
       vec4 t = viewProjectionInverse * v_position;
       vec3 ndc = normalize(t.xyz / t.w);
 
-      // Define vibrant psychedelic colors
-      vec3 color1 = vec3(1.0, 0.0, 1.0);   // Vibrant Magenta
-      vec3 color2 = vec3(0.0, 1.0, 1.0);   // Vibrant Cyan
-      vec3 color3 = vec3(1.0, 0.5, 0.0);   // Vibrant Orange
-      vec3 color4 = vec3(0.0, 1.0, 0.0);   // Vibrant Green
+      vec3 color1 = vec3(1.0, 0.0, 1.0);   // Magenta
+      vec3 color2 = vec3(0.0, 1.0, 1.0);   // Cyan
+      vec3 color3 = vec3(0.0, 1.0, 0.0);   // Green
+      vec3 color4 = vec3(0.7, 0.7, 0.1);   // Yellow
+      vec3 color5 = vec3(1.0, 0.5, 0.0);   // Orange
+      vec3 color6 = vec3(1.0, 0.0, 0.0);   // Red
 
-      // Calculate a smooth gradient for color interpolation
       float gradient = clamp(1.0 - abs(ndc.y * 2.0), 0.0, 1.0);
-      
-      // Interpolate between vibrant psychedelic colors based on the gradient
-        vec3 vibrantPsychedelicColor = mix(color1, color2, gradient);
-        vibrantPsychedelicColor = mix(vibrantPsychedelicColor, color3, gradient);
-        vibrantPsychedelicColor = mix(vibrantPsychedelicColor, color4, gradient);
+      vec3 colorMix = color1 * (1.0 - gradient) + color2 * gradient;
+      gradient = clamp((gradient - 0.5) * 2.0, 0.0, 1.0);
+      colorMix = mix(colorMix, color3, gradient);
+      gradient = clamp((gradient - 0.5) * 2.0, 0.0, 1.0);
+      colorMix = mix(colorMix, color4, gradient);
+      gradient = clamp((gradient - 0.5) * 2.0, 0.0, 1.0);
+      colorMix = mix(colorMix, color5, gradient);
+      gradient = clamp((gradient - 0.5) * 2.0, 0.0, 1.0);
+      colorMix = mix(colorMix, color6, gradient);
         
-
-        vec4 skyColor = texture(cubemap, ndc);
-        float alpha = 0.5;
-
-        if (objectCount < 6.0) {
-            outColor = texture(cubemap, normalize(t.xyz / t.w));
-        } else {
-            outColor = vec4(mix(skyColor.rgb, vibrantPsychedelicColor, 0.5), alpha);
-        }
+      vec4 skyColor = texture(cubemap, ndc);
+      float alpha = 0.5;
+      if (objectCount < 6.0) {
+        outColor = texture(cubemap, normalize(t.xyz / t.w));
+      } else {
+        outColor = vec4(mix(skyColor.rgb, colorMix, 0.5), alpha);
+      }
     }
 `;
 
@@ -111,24 +112,8 @@ let skyboxVertexShader = `
 `;
 
 let positions, uvs, indices;
-/*
-if (useCubeGeometry) {
-    positions = cubePositions;
-    uvs = cubeUvs;
-    indices = cubeIndices;
-} else {
-    positions = spherePositions;
-    uvs = sphereUvs;
-    indices = sphereIndices;
-}
-*/
 let program = app.createProgram(vertexShader.trim(), fragmentShader.trim());
 let skyboxProgram = app.createProgram(skyboxVertexShader.trim(), skyboxFragmentShader.trim());
-
-/*let vertexArray = app.createVertexArray()
-    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, positions))
-    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, uvs))
-    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, indices));*/
 
 let skyboxArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions))
@@ -146,12 +131,11 @@ let skyboxViewProjectionInverse = mat4.create();
 
 let translateVector = vec3.create();
 
-let objects = [];
 let textureFiles = ["color.jpg", "night.jpg", "abstract.jpg", "flowers.png", "canyon.jpg", "colorful.jpg", "mercury.jpg", "watercolor.jpg", "yellow.jpg", "red.jpg"];
 let geometries = ['cube', 'sphere'];
+let objects = [];
 let drawCalls = [];
 let vertexArrays = [];
-
 
 for (const g of geometries) {
     switch (g) {
@@ -167,6 +151,7 @@ for (const g of geometries) {
             indices = sphereIndices;
             break;
     }
+
     let vertexArray;
     vertexArrays.push(vertexArray = app.createVertexArray()
         .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, positions))
@@ -232,7 +217,7 @@ function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, dire
 }
 
 if (objects.length === 0) {
-    createObject(0, 0, 0, 0, 0.5, 0.5, 'right', 'up', 1, 1, 0, 0, 0, 0, getRandomTextureIndex(), 4, 1, 'left', 1.0, 1.0, 1.0);
+    createObject(0, 0, 0, 0, 0.5, 0.5, 'right', 'up', 1, 1, 0, 0, 0, 0, getRandomValue('textureIndex'), 4, 1, 'left', 1.0, 1.0, 1.0);
 }
 
 async function loadTexture(fileName) {
@@ -269,10 +254,9 @@ async function createChild(object) {
 async function stretchObject(object) {
     camRotSpeed = 1;
     if (!object.objectStretched && object.bouncedY && object.bounceYCounter % (maxBounceAmount * 0.5) === 0) {
-        object.stretchX = getRandomStretch();
-        object.stretchY = getRandomStretch();
-        object.stretchZ = getRandomStretch();
-
+        object.stretchX = getRandomValue('stretch');
+        object.stretchY = getRandomValue('stretch');
+        object.stretchZ = getRandomValue('stretch');
         object.objectStretched = true;
         object.stretchCounter += 1;
     }
@@ -287,7 +271,7 @@ async function changeTexture(object) {
         let randomIndex;
 
         do {
-            randomIndex = getRandomTextureIndex();
+            randomIndex = getRandomValue('textureIndex');
         }
         while (randomIndex === previousIndex);
 
@@ -324,6 +308,7 @@ async function updateObject(object, deltaTime, time) {
 
     changeTextureSize(object);
     changeobjectSize(object);
+
     drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     drawCall.uniform("stretchXFactor", object.stretchX);
     drawCall.uniform("stretchYFactor", object.stretchY);
@@ -335,7 +320,6 @@ async function drawObjects(deltaTime, time) {
     for (let i = 0; i < objects.length; i++) {
         let object = objects[i];
         drawCall = drawCalls[object.textureIndex];
-
 
         await updateObject(object, deltaTime, time);
         objectCount < maxObjectsAmount ? await createChild(object) : await stretchObject(object);
@@ -389,12 +373,12 @@ function chooseMovingDirection(object, deltaTime) {
 function updateXDirection(object) {
     if (object.translateXBoundary > 1.00 || object.translateXBoundary < -1.00) {
         object.movingXDirection = object.translateXBoundary > 1.00 ? 'left' : 'right';
-        object.directionX = getRandomDirection();
-        object.speedX = getRandomSpeed();
+        object.directionX = getRandomValue('direction');
+        object.speedX = getRandomValue('speed');
         if (!object.bouncedX) {
             object.bounceXCounter += 1;
             object.textureSize += 1;
-            object.rotationSpeedX = getRandomSpeedRotation();
+            object.rotationSpeedX = getRandomValue('rotationSpeed');
             object.bouncedX = true;
         }
     } else {
@@ -405,13 +389,12 @@ function updateXDirection(object) {
 function updateYDirection(object) {
     if (object.translateYBoundary > 1.00 || object.translateYBoundary < -1.00) {
         object.movingYDirection = object.translateYBoundary > 1.00 ? 'bottom' : 'up';
-        object.directionY = getRandomDirection();
-        object.speedY = getRandomSpeed();
+        object.directionY = getRandomValue('direction');
+        object.speedY = getRandomValue('speed');
         if (!object.bouncedY) {
             object.bounceYCounter += 1;
-            object.rotationSpeedY = getRandomSpeedRotation();
+            object.rotationSpeedY = getRandomValue('rotationSpeed');
             object.bouncedY = true;
-
             objectCount < maxObjectsAmount ? object.objectSize += 1 : object.objectSize;
         }
     } else {
@@ -419,24 +402,19 @@ function updateYDirection(object) {
     }
 }
 
-function getRandomDirection() {
-    return Math.floor(Math.random() * 10) / 10;
-}
-
-function getRandomSpeed() {
-    return Math.floor(Math.random() * 10) + 1;
-}
-
-function getRandomSpeedRotation() {
-    return Math.floor(Math.random() * -10);
-}
-
-function getRandomTextureIndex() {
-    return Math.floor(Math.random() * textureFiles.length);
-}
-
-function getRandomStretch() {
-    return (Math.floor(Math.random() * 10) + 1) * 0.2;
+function getRandomValue(value) {
+    switch(value) {
+        case 'direction':
+            return Math.floor(Math.random() * 10) / 10;
+        case 'speed':
+            return Math.floor(Math.random() * 10) + 1;
+        case 'rotationSpeed':
+            return Math.floor(Math.random() * -10);
+        case 'textureIndex': 
+            return Math.floor(Math.random() * (textureFiles.length * 2));
+        case 'stretch':
+            return (Math.floor(Math.random() * 10) + 1) * 0.2;
+    }
 }
 
 function changeTextureSize(object) {
