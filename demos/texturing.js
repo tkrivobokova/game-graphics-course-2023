@@ -89,10 +89,10 @@ let skyboxFragmentShader = `
         vec4 skyColor = texture(cubemap, ndc);
         float alpha = 0.5;
 
-        if (objectCount >= 6.0) {
-            outColor = vec4(mix(skyColor.rgb, vibrantPsychedelicColor, 0.5), alpha);
-        } else {
+        if (objectCount < 6.0) {
             outColor = texture(cubemap, normalize(t.xyz / t.w));
+        } else {
+            outColor = vec4(mix(skyColor.rgb, vibrantPsychedelicColor, 0.5), alpha);
         }
     }
 `;
@@ -248,8 +248,7 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
         posY: await loadTexture("py.png"),
         negZ: await loadTexture("nz.png"),
         posZ: await loadTexture("pz.png")
-    }))
-    .uniform("objectCount", objectCount);
+    }));
 
 async function createChild(object) {
     if (object.bounceYCounter % maxBounceAmount === 0 && !object.childCreated && object.bounceYCounter !== 0) {
@@ -263,6 +262,7 @@ async function createChild(object) {
 
         object.childCreated = true;
         objectCount += 1.0;
+        drawCall.uniform("objectCount", objectCount);
     } else if (object.bounceYCounter % maxBounceAmount !== 0) {
         object.childCreated = false;
     }
@@ -343,7 +343,6 @@ async function drawObjects(deltaTime, time) {
         let object = objects[i];
         drawCall = drawCalls[object.textureIndex];
 
-        drawCall.uniform("objectCount", 6.0);
 
         await updateObject(object, deltaTime, time);
         objectCount < maxObjectsAmount ? await createChild(object) : await stretchObject(object);
@@ -372,6 +371,7 @@ function draw(timems) {
     app.disable(PicoGL.DEPTH_TEST);
     app.disable(PicoGL.CULL_FACE);
     skyboxDrawCall.uniform("viewProjectionInverse", skyboxViewProjectionInverse);
+    skyboxDrawCall.uniform("objectCount", objectCount);
     skyboxDrawCall.draw();
 
     app.disable(PicoGL.DEPTH_TEST);
