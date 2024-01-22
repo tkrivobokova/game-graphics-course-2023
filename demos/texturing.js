@@ -194,7 +194,6 @@ let previousTime = 0;
 let camRotSpeed = 0.2;
 
 const maxObjectsAmount = 6;
-const maxStretchCount = 6;
 const maxBounceAmount = 8;
 
 function createObject(rotationX, rotationY, rotationSpeedX, rotationSpeedY, directionX, directionY, movingXDirection, movingYDirection, speedX, speedY, translationX, translationY, translateXBoundary, translateYBoundary, texture, size, textureSize, childMovingXDirection, stretchX, stretchY, stretchZ) {
@@ -262,29 +261,23 @@ async function createChild(object) {
 
         object.childCreated = true;
         objectCount += 1.0;
-        drawCall.uniform("objectCount", objectCount);
     } else if (object.bounceYCounter % maxBounceAmount !== 0) {
         object.childCreated = false;
     }
 }
 
 async function stretchObject(object) {
-    if (object.stretchCounter < maxStretchCount) {
-        if (!object.objectStretched && object.bouncedY && object.bounceYCounter % (maxBounceAmount * 0.5) === 0) {
-            object.stretchX = getRandomStretch();
-            object.stretchY = getRandomStretch();
-            object.stretchZ = getRandomStretch();
+    camRotSpeed = 1;
+    if (!object.objectStretched && object.bouncedY && object.bounceYCounter % (maxBounceAmount * 0.5) === 0) {
+        object.stretchX = getRandomStretch();
+        object.stretchY = getRandomStretch();
+        object.stretchZ = getRandomStretch();
 
-            object.objectStretched = true;
-            object.stretchCounter += 1;
-        }
-        else if (object.bounceYCounter % maxBounceAmount !== 0) {
-            object.objectStretched = false;
-        }
-    } else {
-        object.stretchX = 1.0;
-        object.stretchY = 1.0;
-        object.stretchZ = 1.0;
+        object.objectStretched = true;
+        object.stretchCounter += 1;
+    }
+    else if (object.bounceYCounter % maxBounceAmount !== 0) {
+        object.objectStretched = false;
     }
 }
 
