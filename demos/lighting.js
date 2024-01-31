@@ -1,7 +1,7 @@
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import {mat4, vec3} from "../node_modules/gl-matrix/esm/index.js";
 
-import {positions, normals, indices} from "../blender/monkey.js"
+import {positions, normals, indices} from "../blender/sphere.js"
 
 // ******************************************************
 // **               Light configuration                **
@@ -118,7 +118,7 @@ let modelMatrix = mat4.create();
 
 let drawCall = app.createDrawCall(program, vertexArray)
     .uniform("baseColor", baseColor)
-    .uniform("ambientLightColor", ambientLightColor);
+    .uniform("ambientLightColor", ambientLightColor)
 
 let cameraPosition = vec3.fromValues(0, 0, 4);
 mat4.fromXRotation(modelMatrix, -Math.PI / 2);
@@ -126,8 +126,23 @@ mat4.fromXRotation(modelMatrix, -Math.PI / 2);
 const positionsBuffer = new Float32Array(numberOfPointLights * 3);
 const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 
+const radius = 2.5; //TODO: change, calculating based on the sphere size
+const speed = 1.5; 
+let direction = 1; // 1 - right, -1 - left
+let positionMatrix = vec3.fromValues(0, 0, 0); 
+let previousTime = 0;
+
 function draw(timestamp) {
     const time = timestamp * 0.001;
+    const deltaTime = time - previousTime;
+    previousTime = time;
+
+     positionMatrix[0] += speed * direction * deltaTime;
+
+     // TODO: change, calculating based on the screen resolution and sphere size
+     if (positionMatrix[0] + radius > 5 || positionMatrix[0] - radius < -5) {
+         direction *= -1;
+     }
 
     mat4.perspective(projectionMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
     mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
@@ -145,6 +160,8 @@ function draw(timestamp) {
 
     drawCall.uniform("lightPositions[0]", positionsBuffer);
     drawCall.uniform("lightColors[0]", colorsBuffer);
+
+    mat4.fromTranslation(modelMatrix, positionMatrix);
 
     app.clear();
     drawCall.draw();
