@@ -131,7 +131,12 @@ let vertexArray = app.createVertexArray()
     .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, normals))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, indices));
 
-let cubeVertexArray = app.createVertexArray()
+let leftCubeVertexArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, cubePositions))
+    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, cubeNormals))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, cubeIndices));
+
+let rightCubeVertexArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, cubePositions))
     .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, cubeNormals))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, cubeIndices));
@@ -141,25 +146,32 @@ let viewMatrix = mat4.create();
 let viewProjectionMatrix = mat4.create();
 let modelMatrix = mat4.create();
 let cubeModelMatrix = mat4.create();
+let leftCubeModelMatrix = mat4.create();
+let rightCubeModelMatrix = mat4.create();
 let cubeViewProjectionMatrix = mat4.create();
-let cubePositionMatrix = vec3.fromValues(0, 0, 0);
+let leftCubePositionMatrix = vec3.fromValues(-3, 0, 0);
+let rightCubePositionMatrix = vec3.fromValues(3, 0, 0);
 
 let drawCall = app.createDrawCall(program, vertexArray)
     .uniform("baseColor", baseColor)
     .uniform("ambientLightColor", ambientLightColor);
 
-let cubeDrawCall = app.createDrawCall(program, cubeVertexArray)
+let leftCubeDrawCall = app.createDrawCall(program, leftCubeVertexArray)
+    .uniform("baseColor", baseColor)
+    .uniform("ambientLightColor", ambientLightColor);
+
+let rightCubeDrawCall = app.createDrawCall(program, rightCubeVertexArray)
     .uniform("baseColor", baseColor)
     .uniform("ambientLightColor", ambientLightColor);
 
 
-let cameraPosition = vec3.fromValues(0, 0, 4);
+let cameraPosition = vec3.fromValues(0, 0, 5);
 mat4.fromXRotation(modelMatrix, -Math.PI / 2);
 
 const positionsBuffer = new Float32Array(numberOfPointLights * 3);
 const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 
-const radius = 2.5; //TODO: change, calculating based on the sphere size
+const radius = 3; //TODO: change, calculating based on the sphere size
 const speed = 1.5;
 let direction = 1; // 1 - right, -1 - left
 let positionMatrix = vec3.fromValues(0, 0, 0);
@@ -181,9 +193,21 @@ function draw(timestamp) {
     mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjectionMatrix, projectionMatrix, viewMatrix);
 
+    mat4.perspective(projectionMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
+    mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+    mat4.multiply(cubeViewProjectionMatrix, projectionMatrix, viewMatrix);
+
     drawCall.uniform("viewProjectionMatrix", viewProjectionMatrix);
     drawCall.uniform("modelMatrix", modelMatrix);
     drawCall.uniform("cameraPosition", cameraPosition);
+
+    leftCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
+    leftCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
+    leftCubeDrawCall.uniform("cameraPosition", cameraPosition);
+
+    rightCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
+    rightCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
+    rightCubeDrawCall.uniform("cameraPosition", cameraPosition);
 
     for (let i = 0; i < numberOfPointLights; i++) {
         vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
@@ -193,26 +217,17 @@ function draw(timestamp) {
 
     drawCall.uniform("lightPositions[0]", positionsBuffer);
     drawCall.uniform("lightColors[0]", colorsBuffer);
+    leftCubeDrawCall.uniform("modelMatrix", leftCubeModelMatrix);
+    rightCubeDrawCall.uniform("modelMatrix", rightCubeModelMatrix);
 
     mat4.fromTranslation(modelMatrix, positionMatrix);
+    mat4.fromTranslation(leftCubeModelMatrix, leftCubePositionMatrix);
+    mat4.fromTranslation(rightCubeModelMatrix, rightCubePositionMatrix);
 
     app.clear();
     drawCall.draw();
-    
-    mat4.perspective(projectionMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
-    mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
-    mat4.multiply(cubeViewProjectionMatrix, projectionMatrix, viewMatrix);
-
-    cubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
-    cubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
-    cubeDrawCall.uniform("cameraPosition", cameraPosition);
-
-    // Set the cube's position without modifying it during the animation
-    mat4.fromTranslation(cubeModelMatrix, cubePositionMatrix);
-
-    // Draw the cube
-    cubeDrawCall.draw();
-
+    leftCubeDrawCall.draw();
+    rightCubeDrawCall.draw();
 
     requestAnimationFrame(draw);
 }
