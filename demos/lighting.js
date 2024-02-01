@@ -131,12 +131,7 @@ let vertexArray = app.createVertexArray()
     .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, normals))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, indices));
 
-let leftCubeVertexArray = app.createVertexArray()
-    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, cubePositions))
-    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, cubeNormals))
-    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, cubeIndices));
-
-let rightCubeVertexArray = app.createVertexArray()
+let cubeVertexArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, cubePositions))
     .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, cubeNormals))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, cubeIndices));
@@ -149,18 +144,18 @@ let cubeModelMatrix = mat4.create();
 let leftCubeModelMatrix = mat4.create();
 let rightCubeModelMatrix = mat4.create();
 let cubeViewProjectionMatrix = mat4.create();
-let leftCubePositionMatrix = vec3.fromValues(-3, 0, 0);
-let rightCubePositionMatrix = vec3.fromValues(3, 0, 0);
+let leftCubePositionVector = vec3.fromValues(-3, 0, 0);
+let rightCubePositionVector = vec3.fromValues(3, 0, 0);
 
 let drawCall = app.createDrawCall(program, vertexArray)
     .uniform("baseColor", baseColor)
     .uniform("ambientLightColor", ambientLightColor);
 
-let leftCubeDrawCall = app.createDrawCall(program, leftCubeVertexArray)
+let leftCubeDrawCall = app.createDrawCall(program, cubeVertexArray)
     .uniform("baseColor", baseColor)
     .uniform("ambientLightColor", ambientLightColor);
 
-let rightCubeDrawCall = app.createDrawCall(program, rightCubeVertexArray)
+let rightCubeDrawCall = app.createDrawCall(program, cubeVertexArray)
     .uniform("baseColor", baseColor)
     .uniform("ambientLightColor", ambientLightColor);
 
@@ -174,7 +169,7 @@ const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 const radius = 3; //TODO: change, calculating based on the sphere size
 const speed = 1.5;
 let direction = 1; // 1 - right, -1 - left
-let positionMatrix = vec3.fromValues(0, 0, 0);
+let positionVector = vec3.fromValues(0, 0, 0);
 let previousTime = 0;
 
 function draw(timestamp) {
@@ -182,10 +177,10 @@ function draw(timestamp) {
     const deltaTime = time - previousTime;
     previousTime = time;
 
-    positionMatrix[0] += speed * direction * deltaTime;
+    positionVector[0] += speed * direction * deltaTime;
 
     // TODO: change, calculating based on the screen resolution and sphere size
-    if (positionMatrix[0] + radius > 5 || positionMatrix[0] - radius < -5) {
+    if (positionVector[0] + radius > 5 || positionVector[0] - radius < -5) {
         direction *= -1;
     }
 
@@ -220,9 +215,9 @@ function draw(timestamp) {
     leftCubeDrawCall.uniform("modelMatrix", leftCubeModelMatrix);
     rightCubeDrawCall.uniform("modelMatrix", rightCubeModelMatrix);
 
-    mat4.fromTranslation(modelMatrix, positionMatrix);
-    mat4.fromTranslation(leftCubeModelMatrix, leftCubePositionMatrix);
-    mat4.fromTranslation(rightCubeModelMatrix, rightCubePositionMatrix);
+    mat4.fromTranslation(modelMatrix, positionVector);
+    mat4.fromTranslation(leftCubeModelMatrix, leftCubePositionVector);
+    mat4.fromTranslation(rightCubeModelMatrix, rightCubePositionVector);
 
     app.clear();
     drawCall.draw();
