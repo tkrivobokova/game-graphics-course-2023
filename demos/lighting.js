@@ -1,7 +1,8 @@
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
-import {mat4, vec3} from "../node_modules/gl-matrix/esm/index.js";
+import { mat4, vec3 } from "../node_modules/gl-matrix/esm/index.js";
 
-import {positions, normals, indices} from "../blender/sphere.js"
+import { positions, normals, indices } from "../blender/sphere.js";
+import { positions as cubePositions, normals as cubeNormals, indices as cubeIndices } from "../blender/cube.js";
 
 // ******************************************************
 // **               Light configuration                **
@@ -100,9 +101,28 @@ let vertexShader = `
     }
 `;
 
+// language=GLSL
+let cubeVertexShader = `            
+    #version 300 es
+            
+    uniform mat4 modelViewProjectionMatrix;
+    
+    layout(location=0) in vec3 position;
+    layout(location=1) in vec3 normal;
+    layout(location=2) in vec2 uv;
+        
+    out vec2 v_uv;
+    
+    void main()
+    {
+        gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);           
+        v_uv = uv;
+    }
+`;
+
 
 app.enable(PicoGL.DEPTH_TEST)
-   .enable(PicoGL.CULL_FACE);
+    .enable(PicoGL.CULL_FACE);
 
 let program = app.createProgram(vertexShader.trim(), fragmentShader.trim());
 
@@ -111,14 +131,27 @@ let vertexArray = app.createVertexArray()
     .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, normals))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, indices));
 
+let cubeVertexArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, cubePositions))
+    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, cubeNormals))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, cubeIndices));
+
 let projectionMatrix = mat4.create();
 let viewMatrix = mat4.create();
 let viewProjectionMatrix = mat4.create();
 let modelMatrix = mat4.create();
+let cubeModelMatrix = mat4.create();
+let cubeViewProjectionMatrix = mat4.create();
+let cubePositionMatrix = vec3.fromValues(0, 0, 0);
 
 let drawCall = app.createDrawCall(program, vertexArray)
     .uniform("baseColor", baseColor)
-    .uniform("ambientLightColor", ambientLightColor)
+    .uniform("ambientLightColor", ambientLightColor);
+
+let cubeDrawCall = app.createDrawCall(program, cubeVertexArray)
+    .uniform("baseColor", baseColor)
+    .uniform("ambientLightColor", ambientLightColor);
+
 
 let cameraPosition = vec3.fromValues(0, 0, 4);
 mat4.fromXRotation(modelMatrix, -Math.PI / 2);
@@ -127,9 +160,9 @@ const positionsBuffer = new Float32Array(numberOfPointLights * 3);
 const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 
 const radius = 2.5; //TODO: change, calculating based on the sphere size
-const speed = 1.5; 
+const speed = 1.5;
 let direction = 1; // 1 - right, -1 - left
-let positionMatrix = vec3.fromValues(0, 0, 0); 
+let positionMatrix = vec3.fromValues(0, 0, 0);
 let previousTime = 0;
 
 function draw(timestamp) {
@@ -137,12 +170,12 @@ function draw(timestamp) {
     const deltaTime = time - previousTime;
     previousTime = time;
 
-     positionMatrix[0] += speed * direction * deltaTime;
+    positionMatrix[0] += speed * direction * deltaTime;
 
-     // TODO: change, calculating based on the screen resolution and sphere size
-     if (positionMatrix[0] + radius > 5 || positionMatrix[0] - radius < -5) {
-         direction *= -1;
-     }
+    // TODO: change, calculating based on the screen resolution and sphere size
+    if (positionMatrix[0] + radius > 5 || positionMatrix[0] - radius < -5) {
+        direction *= -1;
+    }
 
     mat4.perspective(projectionMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
     mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
@@ -165,6 +198,21 @@ function draw(timestamp) {
 
     app.clear();
     drawCall.draw();
+    
+    mat4.perspective(projectionMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
+    mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+    mat4.multiply(cubeViewProjectionMatrix, projectionMatrix, viewMatrix);
+
+    cubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
+    cubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
+    cubeDrawCall.uniform("cameraPosition", cameraPosition);
+
+    // Set the cube's position without modifying it during the animation
+    mat4.fromTranslation(cubeModelMatrix, cubePositionMatrix);
+
+    // Draw the cube
+    cubeDrawCall.draw();
+
 
     requestAnimationFrame(draw);
 }
