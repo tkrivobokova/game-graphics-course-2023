@@ -160,13 +160,13 @@ let rightCubeDrawCall = app.createDrawCall(program, cubeVertexArray)
     .uniform("ambientLightColor", ambientLightColor);
 
 
-let cameraPosition = vec3.fromValues(0, 0, 5);
+let cameraPosition = vec3.fromValues(10, 0, 10);
 mat4.fromXRotation(modelMatrix, -Math.PI / 2);
 
 const positionsBuffer = new Float32Array(numberOfPointLights * 3);
 const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 
-const radius = 3; //TODO: change, calculating based on the sphere size
+const radius = 3;
 const speed = 1.5;
 let direction = 1;
 let positionVector = vec3.fromValues(0, 0, 0);
@@ -179,17 +179,16 @@ function draw(timestamp) {
 
     positionVector[0] += speed * direction * deltaTime;
 
-    // TODO: change, calculating based on the screen resolution and sphere size
     if (positionVector[0] + radius > 5 || positionVector[0] - radius < -5) {
         direction *= -1;
     }
 
     mat4.perspective(projectionMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
-    mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+    mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(-2.5 * app.width / app.height, 0, -5), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjectionMatrix, projectionMatrix, viewMatrix);
 
     mat4.perspective(projectionMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
-    mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+    mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(-2.5 * app.width / app.height, 0, -5), vec3.fromValues(0, 1, 0));
     mat4.multiply(cubeViewProjectionMatrix, projectionMatrix, viewMatrix);
 
     drawCall.uniform("viewProjectionMatrix", viewProjectionMatrix);
