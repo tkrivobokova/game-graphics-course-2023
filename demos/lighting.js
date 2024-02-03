@@ -10,9 +10,9 @@ import { positions as cubePositions, normals as cubeNormals, indices as cubeIndi
 
 let baseColor = vec3.fromValues(0.9, 0.7, 0.9);
 let ambientLightColor = vec3.fromValues(0.7, 0.5, 1.0);
-let numberOfPointLights = 1;
+let numberOfPointLights = 2;
 let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5)];
-let pointLightInitialPositions = [vec3.fromValues(5, 0, 2), vec3.fromValues(-5, 0, 2)];
+let pointLightInitialPositions = [vec3.fromValues(-5, 5, 2), vec3.fromValues(5, -5, 2)];
 let pointLightPositions = [vec3.create(), vec3.create()];
 
 
@@ -168,7 +168,7 @@ const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 
 const radius = 3; //TODO: change, calculating based on the sphere size
 const speed = 1.5;
-let direction = 1; // 1 - right, -1 - left
+let direction = 1;
 let positionVector = vec3.fromValues(0, 0, 0);
 let previousTime = 0;
 
@@ -205,7 +205,12 @@ function draw(timestamp) {
     rightCubeDrawCall.uniform("cameraPosition", cameraPosition);
 
     for (let i = 0; i < numberOfPointLights; i++) {
-        vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
+         if (i === 0) {
+            vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
+        }
+        else if (i === 1) {
+            vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), -time);
+        }
         positionsBuffer.set(pointLightPositions[i], i * 3);
         colorsBuffer.set(pointLightColors[i], i * 3);
     }
