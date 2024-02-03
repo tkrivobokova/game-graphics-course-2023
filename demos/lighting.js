@@ -2,7 +2,7 @@ import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import { mat4, vec3 } from "../node_modules/gl-matrix/esm/index.js";
 
 import { positions, normals, indices } from "../blender/sphere.js";
-import { positions as cubePositions, normals as cubeNormals, indices as cubeIndices } from "../blender/cube.js";
+import { positions as cubePositions, normals as cubeNormals, indices as cubeIndices, uvs as cubeUvs } from "../blender/cube.js";
 
 // ******************************************************
 // **               Light configuration                **
@@ -74,6 +74,22 @@ let fragmentShader = `
 `;
 
 // language=GLSL
+let cubeFragmentShader = `
+    #version 300 es
+    precision highp float;        
+
+    in vec2 v_uv;
+    
+    uniform sampler2D tex;
+    
+    out vec4 outColor;
+
+    void main() {
+        outColor = texture(tex, v_uv);
+    }
+`;
+
+// language=GLSL
 let vertexShader = `
     #version 300 es
     ${lightCalculationShader}
@@ -105,17 +121,25 @@ let vertexShader = `
 let cubeVertexShader = `            
     #version 300 es
             
-    uniform mat4 modelViewProjectionMatrix;
+    uniform mat4 viewProjectionMatrix;
+    uniform mat4 modelMatrix;      
     
     layout(location=0) in vec3 position;
     layout(location=1) in vec3 normal;
     layout(location=2) in vec2 uv;
         
     out vec2 v_uv;
+    out vec3 vPosition;    
+    out vec3 vNormal;
     
     void main()
     {
-        gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);           
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+
+        vPosition = worldPosition.xyz;
+        vNormal = (modelMatrix * vec4(normal, 0.0)).xyz;
+
+        gl_Position = viewProjectionMatrix * worldPosition;             
         v_uv = uv;
     }
 `;
@@ -125,6 +149,7 @@ app.enable(PicoGL.DEPTH_TEST)
     .enable(PicoGL.CULL_FACE);
 
 let program = app.createProgram(vertexShader.trim(), fragmentShader.trim());
+let cubeProgram = app.createProgram(cubeVertexShader.trim(), cubeFragmentShader.trim());
 
 let vertexArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, positions))
@@ -134,6 +159,7 @@ let vertexArray = app.createVertexArray()
 let cubeVertexArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, cubePositions))
     .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, cubeNormals))
+    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, cubeUvs))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, cubeIndices));
 
 let projectionMatrix = mat4.create();
@@ -147,15 +173,35 @@ let cubeViewProjectionMatrix = mat4.create();
 let leftCubePositionVector = vec3.fromValues(-3, 0, 0);
 let rightCubePositionVector = vec3.fromValues(3, 0, 0);
 
+async function loadTexture(fileName) {
+    return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
+}
+
+const tex = await loadTexture("red.jpg");
+
 let drawCall = app.createDrawCall(program, vertexArray)
     .uniform("baseColor", baseColor)
     .uniform("ambientLightColor", ambientLightColor);
 
-let leftCubeDrawCall = app.createDrawCall(program, cubeVertexArray)
+let leftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
+    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
+        magFilter: PicoGL.LINEAR,
+        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
+        maxAnisotropy: 10,
+        wrapS: PicoGL.REPEAT,
+        wrapT: PicoGL.REPEAT
+    }))
     .uniform("baseColor", baseColor)
     .uniform("ambientLightColor", ambientLightColor);
 
-let rightCubeDrawCall = app.createDrawCall(program, cubeVertexArray)
+let rightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
+    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
+        magFilter: PicoGL.LINEAR,
+        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
+        maxAnisotropy: 10,
+        wrapS: PicoGL.REPEAT,
+        wrapT: PicoGL.REPEAT
+    }))
     .uniform("baseColor", baseColor)
     .uniform("ambientLightColor", ambientLightColor);
 
@@ -204,7 +250,7 @@ function draw(timestamp) {
     rightCubeDrawCall.uniform("cameraPosition", cameraPosition);
 
     for (let i = 0; i < numberOfPointLights; i++) {
-         if (i === 0) {
+        if (i === 0) {
             vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
         }
         else if (i === 1) {
