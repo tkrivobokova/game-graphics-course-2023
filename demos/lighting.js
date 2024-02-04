@@ -76,16 +76,20 @@ let fragmentShader = `
 // language=GLSL
 let cubeFragmentShader = `
     #version 300 es
-    precision highp float;        
+    precision highp float;    
+    ${lightCalculationShader}    
 
     in vec2 v_uv;
+    in vec3 vPosition;   
+    in vec3 vNormal;
+    in vec4 vColor;    
     
     uniform sampler2D tex;
     
     out vec4 outColor;
 
     void main() {
-        outColor = texture(tex, v_uv);
+        outColor = texture(tex, v_uv) + calculateLights(normalize(vNormal), vPosition);
     }
 `;
 
@@ -190,9 +194,7 @@ let leftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
         maxAnisotropy: 10,
         wrapS: PicoGL.REPEAT,
         wrapT: PicoGL.REPEAT
-    }))
-    .uniform("baseColor", baseColor)
-    .uniform("ambientLightColor", ambientLightColor);
+    }));
 
 let rightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
@@ -201,9 +203,7 @@ let rightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
         maxAnisotropy: 10,
         wrapS: PicoGL.REPEAT,
         wrapT: PicoGL.REPEAT
-    }))
-    .uniform("baseColor", baseColor)
-    .uniform("ambientLightColor", ambientLightColor);
+    }));
 
 
 let cameraPosition = vec3.fromValues(10, 0, 10);
