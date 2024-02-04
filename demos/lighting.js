@@ -10,10 +10,10 @@ import { positions as cubePositions, normals as cubeNormals, indices as cubeIndi
 
 let baseColor = vec3.fromValues(0.9, 0.7, 0.9);
 let ambientLightColor = vec3.fromValues(0.7, 0.5, 1.0);
-let numberOfPointLights = 2;
-let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5)];
-let pointLightInitialPositions = [vec3.fromValues(-5, 5, 2), vec3.fromValues(5, -5, 2)];
-let pointLightPositions = [vec3.create(), vec3.create()];
+let numberOfPointLights = 3;
+let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5), vec3.fromValues(0.7, 0.6, 0.5)];
+let pointLightInitialPositions = [vec3.fromValues(-5, 5, 2), vec3.fromValues(5, -5, 2), vec3.fromValues(5, 5, 5)];
+let pointLightPositions = [vec3.create(), vec3.create(), vec3.create()];
 
 
 // language=GLSL
@@ -250,10 +250,10 @@ function draw(timestamp) {
     rightCubeDrawCall.uniform("cameraPosition", cameraPosition);
 
     for (let i = 0; i < numberOfPointLights; i++) {
-        if (i === 0) {
+        if (i % 2 === 0) {
             vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
         }
-        else if (i === 1) {
+        else {
             vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), -time);
         }
         positionsBuffer.set(pointLightPositions[i], i * 3);
