@@ -29,7 +29,10 @@ class Sphere {
             .uniform("ambientLightColor", ambientLightColor);
     }
 
+
     updateModelMatrix(deltaTime) {
+        const radius = 3;
+        const speed = 1.5;
         switch (this.movementDirection) {
             case "up-down":
                 this.positionVector[1] += speed * this.direction * deltaTime;
@@ -39,8 +42,8 @@ class Sphere {
                 break;
         }
 
-        if ((this.movementDirection === 'up-down' && (this.positionVector[1] + radius >= 3 || this.positionVector[1] - radius <= -1)) ||
-            (this.movementDirection === 'left-right' && (this.positionVector[0] + radius >= 3 || this.positionVector[0] - radius <= -3))) {
+        if ((this.movementDirection === 'up-down' && (this.positionVector[1] + radius >= 5 || this.positionVector[1] - radius <= -4)) ||
+            (this.movementDirection === 'left-right' && (this.positionVector[0] + radius >= 5 || this.positionVector[0] - radius <= -5))) {
             this.direction *= -1;
         }
 
@@ -220,7 +223,7 @@ let leftCubePositionVector = vec3.fromValues(-3, -2, 0);
 let rightCubePositionVector = vec3.fromValues(3, -2, 0);
 let upCubePositionVector = vec3.fromValues(-3, 3, 0);
 let downPositionVector = vec3.fromValues(0, -2, 0);
-let upPositionVector = vec3.fromValues(-3, -1, 0);
+let upPositionVector = vec3.fromValues(-3, 1, 0);
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
@@ -265,8 +268,7 @@ mat4.fromXRotation(modelMatrix, -Math.PI / 2);
 const positionsBuffer = new Float32Array(numberOfPointLights * 3);
 const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 
-const radius = 3;
-const speed = 1.5;
+
 let previousTime = 0;
 
 
