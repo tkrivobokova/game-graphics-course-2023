@@ -10,10 +10,10 @@ import { positions as cubePositions, normals as cubeNormals, indices as cubeIndi
 
 let baseColor = vec3.fromValues(0.9, 0.7, 0.9);
 let ambientLightColor = vec3.fromValues(0.7, 0.5, 1.0);
-let numberOfPointLights = 3;
-let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5), vec3.fromValues(0.7, 0.6, 0.5)];
-let pointLightInitialPositions = [vec3.fromValues(-3, -2, 0), vec3.fromValues(3, -2, 0), vec3.fromValues(-3, 3, 0)];
-let pointLightPositions = [vec3.create(), vec3.create(), vec3.create()];
+let numberOfPointLights = 4;
+let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5), vec3.fromValues(0.7, 0.6, 0.5), vec3.fromValues(1, 0.4, 0.9)];
+let pointLightInitialPositions = [vec3.fromValues(-3, -2, 0), vec3.fromValues(3, -2, 0), vec3.fromValues(-3, 3, 0), vec3.fromValues(3, 3, 0)];
+let pointLightPositions = [vec3.create(), vec3.create(), vec3.create(), vec3.create()];
 
 class Sphere {
     constructor(app, program, vertexArray, positionVector, movementDirection) {
