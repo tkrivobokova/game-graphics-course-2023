@@ -12,7 +12,7 @@ let baseColor = vec3.fromValues(0.9, 0.7, 0.9);
 let ambientLightColor = vec3.fromValues(0.7, 0.5, 1.0);
 let numberOfPointLights = 3;
 let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5), vec3.fromValues(0.7, 0.6, 0.5)];
-let pointLightInitialPositions = [vec3.fromValues(-5, 5, 2), vec3.fromValues(5, -5, 2), vec3.fromValues(5, 5, 5)];
+let pointLightInitialPositions = [vec3.fromValues(-3, -2, 0), vec3.fromValues(3, -2, 0), vec3.fromValues(-3, 3, 0)];
 let pointLightPositions = [vec3.create(), vec3.create(), vec3.create()];
 
 class Sphere {
@@ -217,13 +217,13 @@ let modelMatrix = mat4.create();
 let cubeModelMatrix = mat4.create();
 let leftCubeModelMatrix = mat4.create();
 let rightCubeModelMatrix = mat4.create();
-let upCubeModelMatrix = mat4.create();
+let upLeftCubeModelMatrix = mat4.create();
 let cubeViewProjectionMatrix = mat4.create();
 let leftCubePositionVector = vec3.fromValues(-3, -2, 0);
 let rightCubePositionVector = vec3.fromValues(3, -2, 0);
-let upCubePositionVector = vec3.fromValues(-3, 3, 0);
-let downPositionVector = vec3.fromValues(0, -2, 0);
-let upPositionVector = vec3.fromValues(-3, 1, 0);
+let upLeftCubePositionVector = vec3.fromValues(-3, 3, 0);
+let downSpherePositionVector = vec3.fromValues(0, -2, 0);
+let upSpherePositionVector = vec3.fromValues(-3, 1, 0);
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
@@ -231,8 +231,8 @@ async function loadTexture(fileName) {
 
 const tex = await loadTexture("red.jpg");
 
-const downSphere = new Sphere(app, program, vertexArray, downPositionVector, 'left-right');
-const upSphere = new Sphere(app, program, vertexArray, upPositionVector, 'up-down');
+const downSphere = new Sphere(app, program, vertexArray, downSpherePositionVector, 'left-right');
+const upSphere = new Sphere(app, program, vertexArray, upSpherePositionVector, 'up-down');
 
 let leftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
@@ -252,7 +252,7 @@ let rightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
         wrapT: PicoGL.REPEAT
     }));
 
-let upCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
+let upLeftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
         magFilter: PicoGL.LINEAR,
         minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
@@ -262,7 +262,7 @@ let upCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
     }));
 
 
-let cameraPosition = vec3.fromValues(10, 0, 10);
+let cameraPosition = vec3.fromValues(8, 2, 10);
 mat4.fromXRotation(modelMatrix, -Math.PI / 2);
 
 const positionsBuffer = new Float32Array(numberOfPointLights * 3);
@@ -293,9 +293,9 @@ function draw(timestamp) {
     rightCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
     rightCubeDrawCall.uniform("cameraPosition", cameraPosition);
 
-    upCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
-    upCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
-    upCubeDrawCall.uniform("cameraPosition", cameraPosition);
+    upLeftCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
+    upLeftCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
+    upLeftCubeDrawCall.uniform("cameraPosition", cameraPosition);
 
     for (let i = 0; i < numberOfPointLights; i++) {
         if (i % 2 === 0) {
@@ -310,11 +310,11 @@ function draw(timestamp) {
 
     leftCubeDrawCall.uniform("modelMatrix", leftCubeModelMatrix);
     rightCubeDrawCall.uniform("modelMatrix", rightCubeModelMatrix);
-    upCubeDrawCall.uniform("modelMatrix", upCubeModelMatrix);
+    upLeftCubeDrawCall.uniform("modelMatrix", upLeftCubeModelMatrix);
 
     mat4.fromTranslation(leftCubeModelMatrix, leftCubePositionVector);
     mat4.fromTranslation(rightCubeModelMatrix, rightCubePositionVector);
-    mat4.fromTranslation(upCubeModelMatrix, upCubePositionVector);
+    mat4.fromTranslation(upLeftCubeModelMatrix, upLeftCubePositionVector);
 
     app.clear();
 
@@ -322,7 +322,7 @@ function draw(timestamp) {
     upSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
     leftCubeDrawCall.draw();
     rightCubeDrawCall.draw();
-    upCubeDrawCall.draw();
+    upLeftCubeDrawCall.draw();
 
     requestAnimationFrame(draw);
 }
