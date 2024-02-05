@@ -218,10 +218,13 @@ let cubeModelMatrix = mat4.create();
 let leftCubeModelMatrix = mat4.create();
 let rightCubeModelMatrix = mat4.create();
 let upLeftCubeModelMatrix = mat4.create();
+let upRightCubeModelMatrix = mat4.create();
 let cubeViewProjectionMatrix = mat4.create();
 let leftCubePositionVector = vec3.fromValues(-3, -2, 0);
 let rightCubePositionVector = vec3.fromValues(3, -2, 0);
 let upLeftCubePositionVector = vec3.fromValues(-3, 3, 0);
+let upRightCubePositionVector = vec3.fromValues(3, 3, 0);
+
 let downSpherePositionVector = vec3.fromValues(0, -2, 0);
 let upSpherePositionVector = vec3.fromValues(-3, 1, 0);
 
@@ -253,6 +256,15 @@ let rightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
     }));
 
 let upLeftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
+    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
+        magFilter: PicoGL.LINEAR,
+        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
+        maxAnisotropy: 10,
+        wrapS: PicoGL.REPEAT,
+        wrapT: PicoGL.REPEAT
+    }));
+
+    let upRightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
         magFilter: PicoGL.LINEAR,
         minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
@@ -297,6 +309,10 @@ function draw(timestamp) {
     upLeftCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
     upLeftCubeDrawCall.uniform("cameraPosition", cameraPosition);
 
+    upRightCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
+    upRightCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
+    upRightCubeDrawCall.uniform("cameraPosition", cameraPosition);
+
     for (let i = 0; i < numberOfPointLights; i++) {
         if (i % 2 === 0) {
             vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
@@ -311,10 +327,12 @@ function draw(timestamp) {
     leftCubeDrawCall.uniform("modelMatrix", leftCubeModelMatrix);
     rightCubeDrawCall.uniform("modelMatrix", rightCubeModelMatrix);
     upLeftCubeDrawCall.uniform("modelMatrix", upLeftCubeModelMatrix);
+    upRightCubeDrawCall.uniform("modelMatrix", upRightCubeModelMatrix);
 
     mat4.fromTranslation(leftCubeModelMatrix, leftCubePositionVector);
     mat4.fromTranslation(rightCubeModelMatrix, rightCubePositionVector);
     mat4.fromTranslation(upLeftCubeModelMatrix, upLeftCubePositionVector);
+    mat4.fromTranslation(upRightCubeModelMatrix, upRightCubePositionVector);
 
     app.clear();
 
@@ -323,6 +341,7 @@ function draw(timestamp) {
     leftCubeDrawCall.draw();
     rightCubeDrawCall.draw();
     upLeftCubeDrawCall.draw();
+    upRightCubeDrawCall.draw();
 
     requestAnimationFrame(draw);
 }
