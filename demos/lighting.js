@@ -10,10 +10,10 @@ import { positions as cubePositions, normals as cubeNormals, indices as cubeIndi
 
 let baseColor = vec3.fromValues(0.9, 0.7, 0.9);
 let ambientLightColor = vec3.fromValues(0.7, 0.5, 1.0);
-let numberOfPointLights = 4;
-let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5), vec3.fromValues(0.7, 0.6, 0.5), vec3.fromValues(1, 0.4, 0.9)];
-let pointLightInitialPositions = [vec3.fromValues(-3, -2, 0), vec3.fromValues(3, -2, 0), vec3.fromValues(-3, 3, 0), vec3.fromValues(3, 3, 0)];
-let pointLightPositions = [vec3.create(), vec3.create(), vec3.create(), vec3.create()];
+let numberOfPointLights = 3;
+let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5), vec3.fromValues(0.7, 0.6, 0.5)];
+let pointLightInitialPositions = [vec3.fromValues(-2.5, -1, -5), vec3.fromValues(-2.5, 1, -5), vec3.fromValues(1.0, 1.0, 1.0)];
+let pointLightPositions = [vec3.create(), vec3.create(), vec3.create()];
 
 class Sphere {
     constructor(app, program, vertexArray, positionVector, movementDirection) {
@@ -154,7 +154,7 @@ let fragmentShader = `
     void main() {                      
         // For Phong shading (per-fragment) move color calculation from vertex to fragment shader
         outColor = calculateLights(baseColor, normalize(vNormal), vPosition);
-        // outColor = vColor;
+        //outColor = vColor;
     }
 `;
 
@@ -306,7 +306,7 @@ function draw(timestamp) {
 
     for (let i = 0; i < numberOfPointLights; i++) {
         if (i % 2 === 0) {
-            vec3.rotateX(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time * 2);
+            vec3.rotateY(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time * 2);
         }
         else {
             vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time * -3);
