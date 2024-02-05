@@ -314,10 +314,10 @@ function draw(timestamp) {
 
     for (let i = 0; i < numberOfPointLights; i++) {
         if (i % 2 === 0) {
-            vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
+            vec3.rotateX(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time * 2);
         }
         else {
-            vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), -time);
+            vec3.rotateY(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), -time);
         }
         positionsBuffer.set(pointLightPositions[i], i * 3);
         colorsBuffer.set(pointLightColors[i], i * 3);
@@ -339,7 +339,7 @@ function draw(timestamp) {
     upSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
     leftSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
     rightSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
-    
+
     leftCubeDrawCall.draw();
     rightCubeDrawCall.draw();
     upLeftCubeDrawCall.draw();
