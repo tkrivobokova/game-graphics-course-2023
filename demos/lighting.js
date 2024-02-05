@@ -173,9 +173,11 @@ let modelMatrix = mat4.create();
 let cubeModelMatrix = mat4.create();
 let leftCubeModelMatrix = mat4.create();
 let rightCubeModelMatrix = mat4.create();
+let upCubeModelMatrix = mat4.create();
 let cubeViewProjectionMatrix = mat4.create();
-let leftCubePositionVector = vec3.fromValues(-3, 0, 0);
-let rightCubePositionVector = vec3.fromValues(3, 0, 0);
+let leftCubePositionVector = vec3.fromValues(-3, -2, 0);
+let rightCubePositionVector = vec3.fromValues(3, -2, 0);
+let upCubePositionVector = vec3.fromValues(-3, 4, 0);
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
@@ -205,6 +207,15 @@ let rightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
         wrapT: PicoGL.REPEAT
     }));
 
+let upCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
+    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
+        magFilter: PicoGL.LINEAR,
+        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
+        maxAnisotropy: 10,
+        wrapS: PicoGL.REPEAT,
+        wrapT: PicoGL.REPEAT
+    }));
+
 
 let cameraPosition = vec3.fromValues(10, 0, 10);
 mat4.fromXRotation(modelMatrix, -Math.PI / 2);
@@ -215,7 +226,7 @@ const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 const radius = 3;
 const speed = 1.5;
 let direction = 1;
-let positionVector = vec3.fromValues(0, 0, 0);
+let positionVector = vec3.fromValues(0, -2, 0);
 let previousTime = 0;
 
 function draw(timestamp) {
@@ -249,6 +260,10 @@ function draw(timestamp) {
     rightCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
     rightCubeDrawCall.uniform("cameraPosition", cameraPosition);
 
+    upCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
+    upCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
+    upCubeDrawCall.uniform("cameraPosition", cameraPosition);
+
     for (let i = 0; i < numberOfPointLights; i++) {
         if (i % 2 === 0) {
             vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
@@ -264,15 +279,18 @@ function draw(timestamp) {
     drawCall.uniform("lightColors[0]", colorsBuffer);
     leftCubeDrawCall.uniform("modelMatrix", leftCubeModelMatrix);
     rightCubeDrawCall.uniform("modelMatrix", rightCubeModelMatrix);
+    upCubeDrawCall.uniform("modelMatrix", upCubeModelMatrix);
 
     mat4.fromTranslation(modelMatrix, positionVector);
     mat4.fromTranslation(leftCubeModelMatrix, leftCubePositionVector);
     mat4.fromTranslation(rightCubeModelMatrix, rightCubePositionVector);
+    mat4.fromTranslation(upCubeModelMatrix, upCubePositionVector);
 
     app.clear();
     drawCall.draw();
     leftCubeDrawCall.draw();
     rightCubeDrawCall.draw();
+    upCubeDrawCall.draw();
 
     requestAnimationFrame(draw);
 }
