@@ -63,6 +63,39 @@ class Sphere {
     }
 }
 
+class Cube {
+    constructor(app, program, vertexArray, positionVector, texture) {
+        this.app = app;
+        this.program = program;
+        this.vertexArray = vertexArray;
+        this.positionVector = positionVector;
+        this.modelMatrix = mat4.create();
+        this.drawCall = this.app.createDrawCall(this.program, this.vertexArray)
+            .texture("tex", app.createTexture2D(texture, texture.width, texture.height, {
+                magFilter: PicoGL.LINEAR,
+                minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
+                maxAnisotropy: 10,
+                wrapS: PicoGL.REPEAT,
+                wrapT: PicoGL.REPEAT
+            }));
+    }
+
+    updateModelMatrix() {
+        mat4.fromTranslation(this.modelMatrix, this.positionVector);
+    }
+
+    draw(viewProjectionMatrix, cameraPosition) {
+        this.updateModelMatrix();
+
+        this.drawCall
+            .uniform("viewProjectionMatrix", viewProjectionMatrix)
+            .uniform("modelMatrix", this.modelMatrix)
+            .uniform("cameraPosition", cameraPosition);
+
+        this.drawCall.draw();
+    }
+}
+
 // language=GLSL
 let lightCalculationShader = `
     uniform vec3 cameraPosition;
@@ -212,21 +245,17 @@ let projectionMatrix = mat4.create();
 let viewMatrix = mat4.create();
 let viewProjectionMatrix = mat4.create();
 let modelMatrix = mat4.create();
-let cubeModelMatrix = mat4.create();
-let leftCubeModelMatrix = mat4.create();
-let rightCubeModelMatrix = mat4.create();
-let upLeftCubeModelMatrix = mat4.create();
-let upRightCubeModelMatrix = mat4.create();
 let cubeViewProjectionMatrix = mat4.create();
-let leftCubePositionVector = vec3.fromValues(-3, -2, 0);
-let rightCubePositionVector = vec3.fromValues(3, -2, 0);
-let upLeftCubePositionVector = vec3.fromValues(-3, 3, 0);
-let upRightCubePositionVector = vec3.fromValues(3, 3, 0);
 
 let downSpherePositionVector = vec3.fromValues(0, -2, 0);
 let upSpherePositionVector = vec3.fromValues(0, 3, 0);
 let leftSpherePositionVector = vec3.fromValues(-3, 1, 0);
 let rightSpherePositionVector = vec3.fromValues(3, 1, 0);
+
+let leftCubePositionVector = vec3.fromValues(-3, -2, 0);
+let rightCubePositionVector = vec3.fromValues(3, -2, 0);
+let upLeftCubePositionVector = vec3.fromValues(-3, 3, 0);
+let upRightCubePositionVector = vec3.fromValues(3, 3, 0);
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
@@ -239,43 +268,12 @@ const upSphere = new Sphere(app, program, vertexArray, upSpherePositionVector, '
 const leftSphere = new Sphere(app, program, vertexArray, leftSpherePositionVector, 'up-down');
 const rightSphere = new Sphere(app, program, vertexArray, rightSpherePositionVector, 'up-down');
 
-let leftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
-    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
-        magFilter: PicoGL.LINEAR,
-        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
-        maxAnisotropy: 10,
-        wrapS: PicoGL.REPEAT,
-        wrapT: PicoGL.REPEAT
-    }));
+const leftCube = new Cube(app, cubeProgram, cubeVertexArray, leftCubePositionVector, tex);
+const rightCube = new Cube(app, cubeProgram, cubeVertexArray, rightCubePositionVector, tex);
+const upLeftCube = new Cube(app, cubeProgram, cubeVertexArray, upLeftCubePositionVector, tex);
+const upRightCube = new Cube(app, cubeProgram, cubeVertexArray, upRightCubePositionVector, tex);
 
-let rightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
-    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
-        magFilter: PicoGL.LINEAR,
-        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
-        maxAnisotropy: 10,
-        wrapS: PicoGL.REPEAT,
-        wrapT: PicoGL.REPEAT
-    }));
-
-let upLeftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
-    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
-        magFilter: PicoGL.LINEAR,
-        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
-        maxAnisotropy: 10,
-        wrapS: PicoGL.REPEAT,
-        wrapT: PicoGL.REPEAT
-    }));
-
-let upRightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
-    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
-        magFilter: PicoGL.LINEAR,
-        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
-        maxAnisotropy: 10,
-        wrapS: PicoGL.REPEAT,
-        wrapT: PicoGL.REPEAT
-    }));
-
-let cameraPosition = vec3.fromValues(8, 2, 10);
+let cameraPosition = vec3.fromValues(10, 2, 12);
 mat4.fromXRotation(modelMatrix, -Math.PI / 2);
 
 const positionsBuffer = new Float32Array(numberOfPointLights * 3);
@@ -296,22 +294,6 @@ function draw(timestamp) {
     mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(-2.5 * app.width / app.height, 0, -5), vec3.fromValues(0, 1, 0));
     mat4.multiply(cubeViewProjectionMatrix, projectionMatrix, viewMatrix);
 
-    leftCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
-    leftCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
-    leftCubeDrawCall.uniform("cameraPosition", cameraPosition);
-
-    rightCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
-    rightCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
-    rightCubeDrawCall.uniform("cameraPosition", cameraPosition);
-
-    upLeftCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
-    upLeftCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
-    upLeftCubeDrawCall.uniform("cameraPosition", cameraPosition);
-
-    upRightCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
-    upRightCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
-    upRightCubeDrawCall.uniform("cameraPosition", cameraPosition);
-
     for (let i = 0; i < numberOfPointLights; i++) {
         if (i % 2 === 0) {
             vec3.rotateX(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time * 2);
@@ -323,16 +305,6 @@ function draw(timestamp) {
         colorsBuffer.set(pointLightColors[i], i * 3);
     }
 
-    leftCubeDrawCall.uniform("modelMatrix", leftCubeModelMatrix);
-    rightCubeDrawCall.uniform("modelMatrix", rightCubeModelMatrix);
-    upLeftCubeDrawCall.uniform("modelMatrix", upLeftCubeModelMatrix);
-    upRightCubeDrawCall.uniform("modelMatrix", upRightCubeModelMatrix);
-
-    mat4.fromTranslation(leftCubeModelMatrix, leftCubePositionVector);
-    mat4.fromTranslation(rightCubeModelMatrix, rightCubePositionVector);
-    mat4.fromTranslation(upLeftCubeModelMatrix, upLeftCubePositionVector);
-    mat4.fromTranslation(upRightCubeModelMatrix, upRightCubePositionVector);
-
     app.clear();
 
     downSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
@@ -340,10 +312,11 @@ function draw(timestamp) {
     leftSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
     rightSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
 
-    leftCubeDrawCall.draw();
-    rightCubeDrawCall.draw();
-    upLeftCubeDrawCall.draw();
-    upRightCubeDrawCall.draw();
+    leftCube.draw(viewProjectionMatrix, cameraPosition);
+    rightCube.draw(viewProjectionMatrix, cameraPosition);
+    upLeftCube.draw(viewProjectionMatrix, cameraPosition);
+    upRightCube.draw(viewProjectionMatrix, cameraPosition);
+
 
     requestAnimationFrame(draw);
 }
