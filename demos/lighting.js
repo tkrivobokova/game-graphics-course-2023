@@ -29,7 +29,6 @@ class Sphere {
             .uniform("ambientLightColor", ambientLightColor);
     }
 
-
     updateModelMatrix(deltaTime) {
         const radius = 3;
         const speed = 1.5;
@@ -192,7 +191,6 @@ let cubeVertexShader = `
     }
 `;
 
-
 app.enable(PicoGL.DEPTH_TEST)
     .enable(PicoGL.CULL_FACE);
 
@@ -268,7 +266,7 @@ let upLeftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
         wrapT: PicoGL.REPEAT
     }));
 
-    let upRightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
+let upRightCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
         magFilter: PicoGL.LINEAR,
         minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
@@ -277,16 +275,13 @@ let upLeftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
         wrapT: PicoGL.REPEAT
     }));
 
-
 let cameraPosition = vec3.fromValues(8, 2, 10);
 mat4.fromXRotation(modelMatrix, -Math.PI / 2);
 
 const positionsBuffer = new Float32Array(numberOfPointLights * 3);
 const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 
-
 let previousTime = 0;
-
 
 function draw(timestamp) {
     const time = timestamp * 0.001;
@@ -344,6 +339,7 @@ function draw(timestamp) {
     upSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
     leftSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
     rightSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
+    
     leftCubeDrawCall.draw();
     rightCubeDrawCall.draw();
     upLeftCubeDrawCall.draw();
