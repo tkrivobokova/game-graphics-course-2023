@@ -226,7 +226,9 @@ let upLeftCubePositionVector = vec3.fromValues(-3, 3, 0);
 let upRightCubePositionVector = vec3.fromValues(3, 3, 0);
 
 let downSpherePositionVector = vec3.fromValues(0, -2, 0);
-let upSpherePositionVector = vec3.fromValues(-3, 1, 0);
+let upSpherePositionVector = vec3.fromValues(0, 3, 0);
+let leftSpherePositionVector = vec3.fromValues(-3, 1, 0);
+let rightSpherePositionVector = vec3.fromValues(3, 1, 0);
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
@@ -235,7 +237,9 @@ async function loadTexture(fileName) {
 const tex = await loadTexture("red.jpg");
 
 const downSphere = new Sphere(app, program, vertexArray, downSpherePositionVector, 'left-right');
-const upSphere = new Sphere(app, program, vertexArray, upSpherePositionVector, 'up-down');
+const upSphere = new Sphere(app, program, vertexArray, upSpherePositionVector, 'left-right');
+const leftSphere = new Sphere(app, program, vertexArray, leftSpherePositionVector, 'up-down');
+const rightSphere = new Sphere(app, program, vertexArray, rightSpherePositionVector, 'up-down');
 
 let leftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
@@ -338,6 +342,8 @@ function draw(timestamp) {
 
     downSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
     upSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
+    leftSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
+    rightSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
     leftCubeDrawCall.draw();
     rightCubeDrawCall.draw();
     upLeftCubeDrawCall.draw();
