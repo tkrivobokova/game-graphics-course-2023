@@ -299,7 +299,7 @@ function draw(timestamp) {
             vec3.rotateX(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time * 2);
         }
         else {
-            vec3.rotateY(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), -time);
+            vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time * -3);
         }
         positionsBuffer.set(pointLightPositions[i], i * 3);
         colorsBuffer.set(pointLightColors[i], i * 3);
