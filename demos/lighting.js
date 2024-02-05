@@ -90,7 +90,10 @@ class Cube {
         this.drawCall
             .uniform("viewProjectionMatrix", viewProjectionMatrix)
             .uniform("modelMatrix", this.modelMatrix)
-            .uniform("cameraPosition", cameraPosition);
+            .uniform("cameraPosition", cameraPosition)
+            .uniform("lightPositions[0]", positionsBuffer)
+            .uniform("lightColors[0]", colorsBuffer)
+            .uniform("ambientLightColor", ambientLightColor);
 
         this.drawCall.draw();
     }
@@ -99,14 +102,14 @@ class Cube {
 // language=GLSL
 let lightCalculationShader = `
     uniform vec3 cameraPosition;
-    uniform vec3 baseColor;    
+    //uniform vec3 baseColor;    
 
     uniform vec3 ambientLightColor;    
     uniform vec3 lightColors[${numberOfPointLights}];        
     uniform vec3 lightPositions[${numberOfPointLights}];
     
     // This function calculates light reflection using Phong reflection model (ambient + diffuse + specular)
-    vec4 calculateLights(vec3 normal, vec3 position) {
+    vec4 calculateLights(vec3 baseColor, vec3 normal, vec3 position) {
         float ambientIntensity = 0.0;
         float diffuseIntensity = 0.5;
         float specularIntensity = 1.0;
@@ -138,7 +141,9 @@ let lightCalculationShader = `
 let fragmentShader = `
     #version 300 es
     precision highp float;        
-    ${lightCalculationShader}        
+    ${lightCalculationShader}    
+    
+    uniform vec3 baseColor;  
     
     in vec3 vPosition;    
     in vec3 vNormal;
@@ -148,7 +153,7 @@ let fragmentShader = `
     
     void main() {                      
         // For Phong shading (per-fragment) move color calculation from vertex to fragment shader
-        outColor = calculateLights(normalize(vNormal), vPosition);
+        outColor = calculateLights(baseColor, normalize(vNormal), vPosition);
         // outColor = vColor;
     }
 `;
@@ -156,16 +161,20 @@ let fragmentShader = `
 // language=GLSL
 let cubeFragmentShader = `
     #version 300 es
-    precision highp float;    
+    precision highp float;  
+    ${lightCalculationShader}
 
     in vec2 v_uv;  
+    in vec3 vPosition;    
+    in vec3 vNormal;
+    in vec4 vColor;  
     
     uniform sampler2D tex;
     
     out vec4 outColor;
 
     void main() {
-        outColor = texture(tex, v_uv);
+        outColor = calculateLights(texture(tex, v_uv).rgb, normalize(vNormal), vPosition);
     }
 `;
 
@@ -173,6 +182,7 @@ let cubeFragmentShader = `
 let vertexShader = `
     #version 300 es
     ${lightCalculationShader}
+    uniform vec3 baseColor;  
         
     layout(location=0) in vec4 position;
     layout(location=1) in vec4 normal;
