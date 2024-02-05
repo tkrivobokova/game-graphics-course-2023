@@ -15,6 +15,51 @@ let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.
 let pointLightInitialPositions = [vec3.fromValues(-5, 5, 2), vec3.fromValues(5, -5, 2), vec3.fromValues(5, 5, 5)];
 let pointLightPositions = [vec3.create(), vec3.create(), vec3.create()];
 
+class Sphere {
+    constructor(app, program, vertexArray, positionVector, movementDirection) {
+        this.app = app;
+        this.program = program;
+        this.vertexArray = vertexArray;
+        this.positionVector = positionVector;
+        this.modelMatrix = mat4.create();
+        this.movementDirection = movementDirection;
+        this.direction = 1;
+        this.drawCall = this.app.createDrawCall(this.program, this.vertexArray)
+            .uniform("baseColor", baseColor)
+            .uniform("ambientLightColor", ambientLightColor);
+    }
+
+    updateModelMatrix(deltaTime) {
+        switch (this.movementDirection) {
+            case "up-down":
+                this.positionVector[1] += speed * this.direction * deltaTime;
+                break;
+            case "left-right":
+                this.positionVector[0] += speed * this.direction * deltaTime;
+                break;
+        }
+
+        if ((this.movementDirection === 'up-down' && (this.positionVector[1] + radius >= 3 || this.positionVector[1] - radius <= -1)) ||
+            (this.movementDirection === 'left-right' && (this.positionVector[0] + radius >= 3 || this.positionVector[0] - radius <= -3))) {
+            this.direction *= -1;
+        }
+
+        mat4.fromTranslation(this.modelMatrix, this.positionVector);
+    }
+
+    draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer) {
+        this.updateModelMatrix(deltaTime);
+
+        this.drawCall
+            .uniform("lightPositions[0]", positionsBuffer)
+            .uniform("lightColors[0]", colorsBuffer)
+            .uniform("viewProjectionMatrix", viewProjectionMatrix)
+            .uniform("modelMatrix", this.modelMatrix)
+            .uniform("cameraPosition", cameraPosition);
+
+        this.drawCall.draw();
+    }
+}
 
 // language=GLSL
 let lightCalculationShader = `
@@ -77,19 +122,15 @@ let fragmentShader = `
 let cubeFragmentShader = `
     #version 300 es
     precision highp float;    
-    ${lightCalculationShader}    
 
-    in vec2 v_uv;
-    in vec3 vPosition;   
-    in vec3 vNormal;
-    in vec4 vColor;    
+    in vec2 v_uv;  
     
     uniform sampler2D tex;
     
     out vec4 outColor;
 
     void main() {
-        outColor = texture(tex, v_uv) + calculateLights(normalize(vNormal), vPosition);
+        outColor = texture(tex, v_uv);
     }
 `;
 
@@ -177,7 +218,9 @@ let upCubeModelMatrix = mat4.create();
 let cubeViewProjectionMatrix = mat4.create();
 let leftCubePositionVector = vec3.fromValues(-3, -2, 0);
 let rightCubePositionVector = vec3.fromValues(3, -2, 0);
-let upCubePositionVector = vec3.fromValues(-3, 4, 0);
+let upCubePositionVector = vec3.fromValues(-3, 3, 0);
+let downPositionVector = vec3.fromValues(0, -2, 0);
+let upPositionVector = vec3.fromValues(-3, -1, 0);
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
@@ -185,9 +228,8 @@ async function loadTexture(fileName) {
 
 const tex = await loadTexture("red.jpg");
 
-let drawCall = app.createDrawCall(program, vertexArray)
-    .uniform("baseColor", baseColor)
-    .uniform("ambientLightColor", ambientLightColor);
+const downSphere = new Sphere(app, program, vertexArray, downPositionVector, 'left-right');
+const upSphere = new Sphere(app, program, vertexArray, upPositionVector, 'up-down');
 
 let leftCubeDrawCall = app.createDrawCall(cubeProgram, cubeVertexArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
@@ -225,20 +267,13 @@ const colorsBuffer = new Float32Array(numberOfPointLights * 3);
 
 const radius = 3;
 const speed = 1.5;
-let direction = 1;
-let positionVector = vec3.fromValues(0, -2, 0);
 let previousTime = 0;
+
 
 function draw(timestamp) {
     const time = timestamp * 0.001;
     const deltaTime = time - previousTime;
     previousTime = time;
-
-    positionVector[0] += speed * direction * deltaTime;
-
-    if (positionVector[0] + radius > 5 || positionVector[0] - radius < -5) {
-        direction *= -1;
-    }
 
     mat4.perspective(projectionMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
     mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(-2.5 * app.width / app.height, 0, -5), vec3.fromValues(0, 1, 0));
@@ -247,10 +282,6 @@ function draw(timestamp) {
     mat4.perspective(projectionMatrix, Math.PI / 4, app.width / app.height, 0.1, 100.0);
     mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(-2.5 * app.width / app.height, 0, -5), vec3.fromValues(0, 1, 0));
     mat4.multiply(cubeViewProjectionMatrix, projectionMatrix, viewMatrix);
-
-    drawCall.uniform("viewProjectionMatrix", viewProjectionMatrix);
-    drawCall.uniform("modelMatrix", modelMatrix);
-    drawCall.uniform("cameraPosition", cameraPosition);
 
     leftCubeDrawCall.uniform("viewProjectionMatrix", cubeViewProjectionMatrix);
     leftCubeDrawCall.uniform("modelMatrix", cubeModelMatrix);
@@ -275,19 +306,18 @@ function draw(timestamp) {
         colorsBuffer.set(pointLightColors[i], i * 3);
     }
 
-    drawCall.uniform("lightPositions[0]", positionsBuffer);
-    drawCall.uniform("lightColors[0]", colorsBuffer);
     leftCubeDrawCall.uniform("modelMatrix", leftCubeModelMatrix);
     rightCubeDrawCall.uniform("modelMatrix", rightCubeModelMatrix);
     upCubeDrawCall.uniform("modelMatrix", upCubeModelMatrix);
 
-    mat4.fromTranslation(modelMatrix, positionVector);
     mat4.fromTranslation(leftCubeModelMatrix, leftCubePositionVector);
     mat4.fromTranslation(rightCubeModelMatrix, rightCubePositionVector);
     mat4.fromTranslation(upCubeModelMatrix, upCubePositionVector);
 
     app.clear();
-    drawCall.draw();
+
+    downSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
+    upSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
     leftCubeDrawCall.draw();
     rightCubeDrawCall.draw();
     upCubeDrawCall.draw();
