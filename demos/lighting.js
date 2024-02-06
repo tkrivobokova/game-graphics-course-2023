@@ -1,22 +1,28 @@
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import { mat4, vec3 } from "../node_modules/gl-matrix/esm/index.js";
 
-import { positions, normals, indices } from "../blender/sphere.js";
+import { positions, normals, indices } from "../blender/monkey.js";
 import { positions as cubePositions, normals as cubeNormals, indices as cubeIndices, uvs as cubeUvs } from "../blender/cube.js";
 
 // ******************************************************
 // **               Light configuration                **
 // ******************************************************
 
-let baseColor = vec3.fromValues(0.9, 0.7, 0.9);
-let ambientLightColor = vec3.fromValues(0.7, 0.5, 1.0);
+let baseColor1 = vec3.fromValues(1.0, 0.8, 0.6); // peach
+let baseColor2 = vec3.fromValues(1.0, 0.0, 1.0); // magenta
+let baseColor3 = vec3.fromValues(0.75, 0.75, 0.75); // silver
+let baseColor4 = vec3.fromValues(0.6, 1.0, 0.6); // mint
+let ambientLightColor = vec3.fromValues(0.8, 0.8, 0.8); // light gray
 let numberOfPointLights = 3;
-let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5), vec3.fromValues(0.7, 0.6, 0.5)];
-let pointLightInitialPositions = [vec3.fromValues(-2.5, -1, -5), vec3.fromValues(-2.5, 1, -5), vec3.fromValues(1.0, 1.0, 1.0)];
+let pointLightColors = [
+    vec3.fromValues(1.0, 1.0, 1.0), // white light
+    vec3.fromValues(0.8, 0.9, 1.0), // softh bluish-white light
+    vec3.fromValues(0.0, 1.0, 1.0)]; // cyan light
+let pointLightInitialPositions = [vec3.fromValues(-2.5, -1, -5), vec3.fromValues(2.5, 1, -5), vec3.fromValues(0, 3, 5)];
 let pointLightPositions = [vec3.create(), vec3.create(), vec3.create()];
 
-class Sphere {
-    constructor(app, program, vertexArray, positionVector, movementDirection) {
+class Object {
+    constructor(app, program, vertexArray, positionVector, movementDirection, ambientIntensity, diffuseIntensity, specularIntensity, specularPower, metalness, baseColor) {
         this.app = app;
         this.program = program;
         this.vertexArray = vertexArray;
@@ -24,10 +30,23 @@ class Sphere {
         this.modelMatrix = mat4.create();
         this.movementDirection = movementDirection;
         this.direction = 1;
+        this.ambientIntensity = ambientIntensity,
+        this.diffuseIntensity = diffuseIntensity,
+        this.specularIntensity = specularIntensity,
+        this.specularPower = specularPower,
+        this.metalness = metalness,
+        this.baseColor = baseColor;
         this.drawCall = this.app.createDrawCall(this.program, this.vertexArray)
-            .uniform("baseColor", baseColor)
-            .uniform("ambientLightColor", ambientLightColor);
+            .uniform("baseColor", this.baseColor)
+            .uniform("ambientLightColor", ambientLightColor)
+            .uniform("ambientIntensity", this.ambientIntensity)
+            .uniform("diffuseIntensity", this.diffuseIntensity)
+            .uniform("specularIntensity", this.specularIntensity)
+            .uniform("specularPower", this.specularPower)
+            .uniform("metalness", this.metalness);
+        
     }
+
 
     updateModelMatrix(deltaTime) {
         const radius = 3;
@@ -47,6 +66,9 @@ class Sphere {
         }
 
         mat4.fromTranslation(this.modelMatrix, this.positionVector);
+        mat4.scale(this.modelMatrix, this.modelMatrix, vec3.fromValues(0.5, 0.5, 0.5));
+        mat4.rotateX(this.modelMatrix, this.modelMatrix, Math.PI / -2);
+        mat4.rotateZ(this.modelMatrix, this.modelMatrix, Math.PI / 4);
     }
 
     draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer) {
@@ -64,12 +86,17 @@ class Sphere {
 }
 
 class Cube {
-    constructor(app, program, vertexArray, positionVector, texture) {
+    constructor(app, program, vertexArray, positionVector, texture, ambientIntensity, diffuseIntensity, specularIntensity, specularPower, metalness) {
         this.app = app;
         this.program = program;
         this.vertexArray = vertexArray;
         this.positionVector = positionVector;
         this.modelMatrix = mat4.create();
+        this.ambientIntensity = ambientIntensity,
+        this.diffuseIntensity = diffuseIntensity,
+        this.specularIntensity = specularIntensity,
+        this.specularPower = specularPower,
+        this.metalness = metalness;
         this.drawCall = this.app.createDrawCall(this.program, this.vertexArray)
             .texture("tex", app.createTexture2D(texture, texture.width, texture.height, {
                 magFilter: PicoGL.LINEAR,
@@ -93,7 +120,12 @@ class Cube {
             .uniform("cameraPosition", cameraPosition)
             .uniform("lightPositions[0]", positionsBuffer)
             .uniform("lightColors[0]", colorsBuffer)
-            .uniform("ambientLightColor", ambientLightColor);
+            .uniform("ambientLightColor", ambientLightColor)
+            .uniform("ambientIntensity", this.ambientIntensity)
+            .uniform("diffuseIntensity", this.diffuseIntensity)
+            .uniform("specularIntensity", this.specularIntensity)
+            .uniform("specularPower", this.specularPower)
+            .uniform("metalness", this.metalness);
 
         this.drawCall.draw();
     }
@@ -102,7 +134,11 @@ class Cube {
 // language=GLSL
 let lightCalculationShader = `
     uniform vec3 cameraPosition;
-    //uniform vec3 baseColor;    
+    uniform float ambientIntensity;    
+    uniform float diffuseIntensity;    
+    uniform float specularIntensity;    
+    uniform float specularPower;    
+    uniform float metalness;    
 
     uniform vec3 ambientLightColor;    
     uniform vec3 lightColors[${numberOfPointLights}];        
@@ -110,11 +146,6 @@ let lightCalculationShader = `
     
     // This function calculates light reflection using Phong reflection model (ambient + diffuse + specular)
     vec4 calculateLights(vec3 baseColor, vec3 normal, vec3 position) {
-        float ambientIntensity = 0.0;
-        float diffuseIntensity = 0.5;
-        float specularIntensity = 1.0;
-        float specularPower = 50.0;
-        float metalness = 0.0;
 
         vec3 viewDirection = normalize(cameraPosition.xyz - position);
         vec3 color = baseColor * ambientLightColor * ambientIntensity;
@@ -257,10 +288,10 @@ let viewProjectionMatrix = mat4.create();
 let modelMatrix = mat4.create();
 let cubeViewProjectionMatrix = mat4.create();
 
-let downSpherePositionVector = vec3.fromValues(0, -2, 0);
-let upSpherePositionVector = vec3.fromValues(0, 3, 0);
-let leftSpherePositionVector = vec3.fromValues(-3, 1, 0);
-let rightSpherePositionVector = vec3.fromValues(3, 1, 0);
+let downObjectPositionVector = vec3.fromValues(0, -2, 0);
+let upObjectPositionVector = vec3.fromValues(0, 3, 0);
+let leftObjectPositionVector = vec3.fromValues(-3, 1, 0);
+let rightObjectPositionVector = vec3.fromValues(3, 1, 0);
 
 let leftCubePositionVector = vec3.fromValues(-3, -2, 0);
 let rightCubePositionVector = vec3.fromValues(3, -2, 0);
@@ -273,17 +304,17 @@ async function loadTexture(fileName) {
 
 const tex = await loadTexture("red.jpg");
 
-const downSphere = new Sphere(app, program, vertexArray, downSpherePositionVector, 'left-right');
-const upSphere = new Sphere(app, program, vertexArray, upSpherePositionVector, 'left-right');
-const leftSphere = new Sphere(app, program, vertexArray, leftSpherePositionVector, 'up-down');
-const rightSphere = new Sphere(app, program, vertexArray, rightSpherePositionVector, 'up-down');
+const downObject = new Object(app, program, vertexArray, downObjectPositionVector, 'left-right', 0.1, 0.4, 0.2, 30.0, 0.0, baseColor1); // matte surface
+const upObject = new Object(app, program, vertexArray, upObjectPositionVector, 'left-right', 0.99, 0.6, 0.3, 40.0, 0.0, baseColor2); // smth funny
+const leftObject = new Object(app, program, vertexArray, leftObjectPositionVector, 'up-down', 0.01, 0.1, 0.9, 60.0, 1.0, baseColor3); // silver material surface
+const rightObject = new Object(app, program, vertexArray, rightObjectPositionVector, 'up-down', 0.4, 0.8, 0.95, 90.0, 0.9, baseColor4); // wet surface 
 
-const leftCube = new Cube(app, cubeProgram, cubeVertexArray, leftCubePositionVector, tex);
-const rightCube = new Cube(app, cubeProgram, cubeVertexArray, rightCubePositionVector, tex);
-const upLeftCube = new Cube(app, cubeProgram, cubeVertexArray, upLeftCubePositionVector, tex);
-const upRightCube = new Cube(app, cubeProgram, cubeVertexArray, upRightCubePositionVector, tex);
+const leftCube = new Cube(app, cubeProgram, cubeVertexArray, leftCubePositionVector, tex, 0.2, 0.5, 1.0, 50.0, 0.0);
+const rightCube = new Cube(app, cubeProgram, cubeVertexArray, rightCubePositionVector, tex, 0.2, 0.5, 1.0, 50.0, 0.0);
+const upLeftCube = new Cube(app, cubeProgram, cubeVertexArray, upLeftCubePositionVector, tex, 0.2, 0.5, 1.0, 50.0, 0.0);
+const upRightCube = new Cube(app, cubeProgram, cubeVertexArray, upRightCubePositionVector, tex, 0.2, 0.5, 1.0, 50.0, 0.0);
 
-let cameraPosition = vec3.fromValues(10, 2, 12);
+let cameraPosition = vec3.fromValues(7, 2, 9);
 mat4.fromXRotation(modelMatrix, -Math.PI / 2);
 
 const positionsBuffer = new Float32Array(numberOfPointLights * 3);
@@ -317,10 +348,10 @@ function draw(timestamp) {
 
     app.clear();
 
-    downSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
-    upSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
-    leftSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
-    rightSphere.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
+    downObject.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
+    upObject.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
+    leftObject.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
+    rightObject.draw(viewProjectionMatrix, cameraPosition, deltaTime, positionsBuffer, colorsBuffer);
 
     leftCube.draw(viewProjectionMatrix, cameraPosition);
     rightCube.draw(viewProjectionMatrix, cameraPosition);
