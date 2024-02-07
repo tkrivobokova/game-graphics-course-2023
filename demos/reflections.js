@@ -3,7 +3,7 @@
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import {mat4, vec3, mat3, vec4, vec2} from "../node_modules/gl-matrix/esm/index.js";
 
-import {positions, normals, indices} from "../blender/cube.js"
+import {positions, normals, indices} from "../blender/torus.js"
 import {positions as planePositions, uvs as planeUvs, indices as planeIndices} from "../blender/plane.js"
 
 // language=GLSL
@@ -74,7 +74,7 @@ let mirrorFragmentShader = `
         // 0.03 is a mirror distortion factor, try making a larger distortion         
         screenPos.x += (texture(distortionMap, vUv).r - 0.5) * 0.03;
         outColor = texture(reflectionTex, screenPos);
-    }
+    }   
 `;
 
 // language=GLSL
@@ -242,6 +242,8 @@ function drawObjects(cameraPosition, viewMatrix) {
 
     mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
+    mat4.rotateX(modelMatrix, modelMatrix, Math.PI / -2);
+    mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(0.5, 0.5, 0.5));
 
     let skyboxViewProjectionMatrix = mat4.create();
     mat4.mul(skyboxViewProjectionMatrix, projMatrix, viewMatrix);
@@ -274,7 +276,7 @@ function draw(timems) {
     let time = timems * 0.001;
 
     mat4.perspective(projMatrix, Math.PI / 2.5, app.width / app.height, 0.1, 100.0);
-    vec3.rotateY(cameraPosition, vec3.fromValues(5, 0, 2), vec3.fromValues(0, 0, 0), time * 0.1);
+    vec3.rotateY(cameraPosition, vec3.fromValues(5, 1, 2), vec3.fromValues(0, 0, 0), time * 0.1);
     mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 2), vec3.fromValues(0, 1, 0));
 
     mat4.fromXRotation(rotateXMatrix, time * 0.1136 - Math.PI / 2);
