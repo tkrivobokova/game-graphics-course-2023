@@ -274,8 +274,8 @@ function draw(timems) {
     let time = timems * 0.001;
 
     mat4.perspective(projMatrix, Math.PI / 2.5, app.width / app.height, 0.1, 100.0);
-    vec3.rotateY(cameraPosition, vec3.fromValues(0, 1, 3.4), vec3.fromValues(0, 0, 0), time * 0.05);
-    mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, -0.5, 0), vec3.fromValues(0, 1, 0));
+    vec3.rotateY(cameraPosition, vec3.fromValues(5, 0, 2), vec3.fromValues(0, 0, 0), time * 0.1);
+    mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, 0, 2), vec3.fromValues(0, 1, 0));
 
     mat4.fromXRotation(rotateXMatrix, time * 0.1136 - Math.PI / 2);
     mat4.fromZRotation(rotateYMatrix, time * 0.2235);
