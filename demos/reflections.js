@@ -264,12 +264,14 @@ function drawObjects(cameraPosition, viewMatrix) {
     skyboxDrawCall.draw();
 
     app.enable(PicoGL.DEPTH_TEST);
-    app.enable(PicoGL.CULL_FACE);
+    app.disable(PicoGL.CULL_FACE);
     torusDrawCall.uniform("modelViewProjectionMatrix", -modelViewProjectionMatrix);
     torusDrawCall.uniform("cameraPosition", cameraPosition);
     torusDrawCall.uniform("modelMatrix", modelMatrix);
     torusDrawCall.uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
     torusDrawCall.draw();
+    app.enable(PicoGL.CULL_FACE);
+
 
     cubeDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     cubeDrawCall.uniform("cameraPosition", cameraPosition);
