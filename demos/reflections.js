@@ -1,10 +1,11 @@
 // This demo demonstrates simple cubemap reflections and more complex planar reflections
 
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
-import {mat4, vec3, mat3, vec4, vec2} from "../node_modules/gl-matrix/esm/index.js";
+import { mat4, vec3, mat3, vec4, vec2 } from "../node_modules/gl-matrix/esm/index.js";
 
-import {positions, normals, indices} from "../blender/torus.js"
-import {positions as planePositions, uvs as planeUvs, indices as planeIndices} from "../blender/plane.js"
+import { positions as torusPositions, normals as torusNormals, indices as torusIndices } from "../blender/torus.js"
+import { positions as cubePositions, normals as cubeNormals, indices as cubeIndices } from "../blender/cube.js"
+import { positions as planePositions, uvs as planeUvs, indices as planeIndices } from "../blender/plane.js"
 
 // language=GLSL
 let fragmentShader = `
@@ -133,10 +134,15 @@ let program = app.createProgram(vertexShader, fragmentShader);
 let skyboxProgram = app.createProgram(skyboxVertexShader, skyboxFragmentShader);
 let mirrorProgram = app.createProgram(mirrorVertexShader, mirrorFragmentShader);
 
-let vertexArray = app.createVertexArray()
-    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, positions))
-    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, normals))
-    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, indices));
+let torusVertexArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, torusPositions))
+    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, torusNormals))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, torusIndices));
+
+let cubeVertexArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, cubePositions))
+    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, cubeNormals))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, cubeIndices));
 
 const planePositionsBuffer = app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions);
 const planeUvsBuffer = app.createVertexBuffer(PicoGL.FLOAT, 2, planeUvs);
@@ -153,8 +159,8 @@ let mirrorArray = app.createVertexArray()
 
 // Change the reflection texture resolution to checkout the difference
 let reflectionResolutionFactor = 0.4;
-let reflectionColorTarget = app.createTexture2D(app.width * reflectionResolutionFactor, app.height * reflectionResolutionFactor, {magFilter: PicoGL.LINEAR});
-let reflectionDepthTarget = app.createTexture2D(app.width * reflectionResolutionFactor, app.height * reflectionResolutionFactor, {internalFormat: PicoGL.DEPTH_COMPONENT16});
+let reflectionColorTarget = app.createTexture2D(app.width * reflectionResolutionFactor, app.height * reflectionResolutionFactor, { magFilter: PicoGL.LINEAR });
+let reflectionDepthTarget = app.createTexture2D(app.width * reflectionResolutionFactor, app.height * reflectionResolutionFactor, { internalFormat: PicoGL.DEPTH_COMPONENT16 });
 let reflectionBuffer = app.createFramebuffer().colorTarget(0, reflectionColorTarget).depthTarget(reflectionDepthTarget);
 
 let projMatrix = mat4.create();
@@ -177,19 +183,19 @@ function calculateSurfaceReflectionMatrix(reflectionMat, mirrorModelMatrix, surf
     let plane = vec4.fromValues(normal[0], normal[1], normal[2], d);
 
     reflectionMat[0] = (1 - 2 * plane[0] * plane[0]);
-    reflectionMat[4] = ( - 2 * plane[0] * plane[1]);
-    reflectionMat[8] = ( - 2 * plane[0] * plane[2]);
-    reflectionMat[12] = ( - 2 * plane[3] * plane[0]);
+    reflectionMat[4] = (- 2 * plane[0] * plane[1]);
+    reflectionMat[8] = (- 2 * plane[0] * plane[2]);
+    reflectionMat[12] = (- 2 * plane[3] * plane[0]);
 
-    reflectionMat[1] = ( - 2 * plane[1] * plane[0]);
+    reflectionMat[1] = (- 2 * plane[1] * plane[0]);
     reflectionMat[5] = (1 - 2 * plane[1] * plane[1]);
-    reflectionMat[9] = ( - 2 * plane[1] * plane[2]);
-    reflectionMat[13] = ( - 2 * plane[3] * plane[1]);
+    reflectionMat[9] = (- 2 * plane[1] * plane[2]);
+    reflectionMat[13] = (- 2 * plane[3] * plane[1]);
 
-    reflectionMat[2] = ( - 2 * plane[2] * plane[0]);
-    reflectionMat[6] = ( - 2 * plane[2] * plane[1]);
+    reflectionMat[2] = (- 2 * plane[2] * plane[0]);
+    reflectionMat[6] = (- 2 * plane[2] * plane[1]);
     reflectionMat[10] = (1 - 2 * plane[2] * plane[2]);
-    reflectionMat[14] = ( - 2 * plane[3] * plane[2]);
+    reflectionMat[14] = (- 2 * plane[3] * plane[2]);
 
     reflectionMat[3] = 0;
     reflectionMat[7] = 0;
@@ -212,7 +218,10 @@ const cubemap = app.createCubemap({
     posZ: await loadTexture("pz.png")
 });
 
-let drawCall = app.createDrawCall(program, vertexArray)
+let torusDrawCall = app.createDrawCall(program, torusVertexArray)
+    .texture("cubemap", cubemap);
+
+let cubeDrawCall = app.createDrawCall(program, cubeVertexArray)
     .texture("cubemap", cubemap);
 
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
@@ -222,8 +231,7 @@ let mirrorDrawCall = app.createDrawCall(mirrorProgram, mirrorArray)
     .texture("reflectionTex", reflectionColorTarget)
     .texture("distortionMap", app.createTexture2D(await loadTexture("noise.png")));
 
-function renderReflectionTexture()
-{
+function renderReflectionTexture() {
     app.drawFramebuffer(reflectionBuffer);
     app.viewport(0, 0, reflectionColorTarget.width, reflectionColorTarget.height);
     app.gl.cullFace(app.gl.FRONT);
@@ -257,11 +265,17 @@ function drawObjects(cameraPosition, viewMatrix) {
 
     app.enable(PicoGL.DEPTH_TEST);
     app.enable(PicoGL.CULL_FACE);
-    drawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
-    drawCall.uniform("cameraPosition", cameraPosition);
-    drawCall.uniform("modelMatrix", modelMatrix);
-    drawCall.uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
-    drawCall.draw();
+    torusDrawCall.uniform("modelViewProjectionMatrix", -modelViewProjectionMatrix);
+    torusDrawCall.uniform("cameraPosition", cameraPosition);
+    torusDrawCall.uniform("modelMatrix", modelMatrix);
+    torusDrawCall.uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
+    torusDrawCall.draw();
+
+    cubeDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
+    cubeDrawCall.uniform("cameraPosition", cameraPosition);
+    cubeDrawCall.uniform("modelMatrix", modelMatrix);
+    cubeDrawCall.uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
+    cubeDrawCall.draw();
 }
 
 function drawMirror() {
