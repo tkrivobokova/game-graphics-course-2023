@@ -21,6 +21,7 @@ let fragmentShader = `
     void main()
     {        
         vec3 reflectedDir = reflect(viewDir, normalize(vNormal));
+        // reflection of pontchik
         outColor = texture(cubemap, reflectedDir);
         
         // Try using a higher mipmap LOD to get a rough material effect without any performance impact
@@ -151,7 +152,7 @@ let mirrorArray = app.createVertexArray()
     .indexBuffer(planeIndicesBuffer);
 
 // Change the reflection texture resolution to checkout the difference
-let reflectionResolutionFactor = 0.2;
+let reflectionResolutionFactor = 0.4;
 let reflectionColorTarget = app.createTexture2D(app.width * reflectionResolutionFactor, app.height * reflectionResolutionFactor, {magFilter: PicoGL.LINEAR});
 let reflectionDepthTarget = app.createTexture2D(app.width * reflectionResolutionFactor, app.height * reflectionResolutionFactor, {internalFormat: PicoGL.DEPTH_COMPONENT16});
 let reflectionBuffer = app.createFramebuffer().colorTarget(0, reflectionColorTarget).depthTarget(reflectionDepthTarget);
@@ -242,8 +243,6 @@ function drawObjects(cameraPosition, viewMatrix) {
 
     mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
-    mat4.rotateX(modelMatrix, modelMatrix, Math.PI / -2);
-    mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(0.5, 0.5, 0.5));
 
     let skyboxViewProjectionMatrix = mat4.create();
     mat4.mul(skyboxViewProjectionMatrix, projMatrix, viewMatrix);
@@ -266,10 +265,12 @@ function drawObjects(cameraPosition, viewMatrix) {
 }
 
 function drawMirror() {
+    app.disable(PicoGL.CULL_FACE);
     mat4.multiply(mirrorModelViewProjectionMatrix, viewProjMatrix, mirrorModelMatrix);
     mirrorDrawCall.uniform("modelViewProjectionMatrix", mirrorModelViewProjectionMatrix);
     mirrorDrawCall.uniform("screenSize", vec2.fromValues(app.width, app.height))
     mirrorDrawCall.draw();
+    app.enable(PicoGL.CULL_FACE);
 }
 
 function draw(timems) {
@@ -282,8 +283,10 @@ function draw(timems) {
     mat4.fromXRotation(rotateXMatrix, time * 0.1136 - Math.PI / 2);
     mat4.fromZRotation(rotateYMatrix, time * 0.2235);
     mat4.mul(modelMatrix, rotateXMatrix, rotateYMatrix);
+    mat4.rotateX(modelMatrix, modelMatrix, Math.PI / -2);
+    mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(0.5, 0.5, 0.5));
 
-    mat4.fromXRotation(rotateXMatrix, 0.3);
+    mat4.fromXRotation(rotateXMatrix, Math.PI / 2);
     mat4.fromYRotation(rotateYMatrix, time * 0.2354);
     mat4.mul(mirrorModelMatrix, rotateYMatrix, rotateXMatrix);
     mat4.translate(mirrorModelMatrix, mirrorModelMatrix, vec3.fromValues(0, -1, 0));
