@@ -211,12 +211,12 @@ async function loadTexture(fileName) {
 }
 
 const cubemap = app.createCubemap({
-    negX: await loadTexture("nx.png"),
-    posX: await loadTexture("px.png"),
-    negY: await loadTexture("ny.png"),
-    posY: await loadTexture("py.png"),
-    negZ: await loadTexture("nz.png"),
-    posZ: await loadTexture("pz.png")
+    negX: await loadTexture("clouds_nx.png"),
+    posX: await loadTexture("clouds_px.png"),
+    negY: await loadTexture("clouds_ny.png"),
+    posY: await loadTexture("clouds_py.png"),
+    negZ: await loadTexture("clouds_nz.png"),
+    posZ: await loadTexture("clouds_pz.png")
 });
 
 let torusDrawCall = app.createDrawCall(program, torusVertexArray)
