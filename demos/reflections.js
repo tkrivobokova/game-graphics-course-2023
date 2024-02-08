@@ -76,6 +76,7 @@ let mirrorFragmentShader = `
         // 0.03 is a mirror distortion factor, try making a larger distortion         
         screenPos.x += (texture(distortionMap, vUv).r - 0.5) * 0.03;
         outColor = texture(reflectionTex, screenPos);
+        outColor.a = 0.7;
     }   
 `;
 
@@ -282,11 +283,14 @@ function drawObjects(cameraPosition, viewMatrix) {
 
 function drawMirror() {
     app.disable(PicoGL.CULL_FACE);
+    app.enable(PicoGL.BLEND);
+    app.blendFunc(PicoGL.SRC_ALPHA, PicoGL.ONE_MINUS_SRC_ALPHA);
     mat4.multiply(mirrorModelViewProjectionMatrix, viewProjMatrix, mirrorModelMatrix);
     mirrorDrawCall.uniform("modelViewProjectionMatrix", mirrorModelViewProjectionMatrix);
     mirrorDrawCall.uniform("screenSize", vec2.fromValues(app.width, app.height))
     mirrorDrawCall.draw();
     app.enable(PicoGL.CULL_FACE);
+    app.disable(PicoGL.BLEND);
 }
 
 function draw(timems) {
