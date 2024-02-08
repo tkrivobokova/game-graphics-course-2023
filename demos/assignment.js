@@ -245,7 +245,8 @@ async function draw(timems) {
     octopusDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     octopusDrawCall.draw();
 
-    
+    app.enable(PicoGL.BLEND);
+    app.blendFunc(PicoGL.ONE, PicoGL.ONE_MINUS_SRC_ALPHA);
     teapotDrawCall.texture("cubemap", cubemapCurrent);
     teapotDrawCall.uniform("cameraPosition", camPos);
     teapotDrawCall.uniform("modelMatrix", modelMatrix);
