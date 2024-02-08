@@ -2,6 +2,7 @@ import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import { mat4, vec3, vec4 } from "../node_modules/gl-matrix/esm/index.js";
 
 import { positions as planePositions, indices as planeIndices } from "../blender/plane.js";
+import { positions as beePositions, uvs as beeUvs, indices as beeIndices } from "../blender/bee.js";
 
 // language=GLSL
 let skyboxFragmentShader = `
@@ -31,6 +32,42 @@ let skyboxVertexShader = `
     void main() {
       v_position = vec4(position.xz, 1.0, 1.0);
       gl_Position = v_position;
+    }
+`;
+
+// language=GLSL
+let beeFragmentShader = `
+    #version 300 es
+    precision highp float;
+    
+    uniform sampler2D tex;    
+    
+    in vec2 v_uv;
+    
+    out vec4 outColor;
+    
+    void main()
+    {        
+        outColor = texture(tex, v_uv);
+    }
+`;
+
+// language=GLSL
+let beeVertexShader = `
+    #version 300 es
+            
+    uniform mat4 modelViewProjectionMatrix;
+    
+    layout(location=0) in vec3 position;
+    layout(location=1) in vec3 normal;
+    layout(location=2) in vec2 uv;
+        
+    out vec2 v_uv;
+    
+    void main()
+    {
+        gl_Position = modelViewProjectionMatrix * vec4(position * 0.01, 1.0);           
+        v_uv = uv;
     }
 `;
 
@@ -77,13 +114,16 @@ const cubemapPaths = {
 }
 
 let skyboxProgram = app.createProgram(skyboxVertexShader.trim(), skyboxFragmentShader.trim());
+let beeProgram = app.createProgram(beeVertexShader.trim(), beeFragmentShader.trim());
 
 let skyboxArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, planeIndices));
 
-console.log("Current cubemap:", currentCubemap);
-console.log("cubemapPaths[currentCubemap]:", cubemapPaths[currentCubemap]);
+let beeArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, beePositions))
+    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, beeUvs))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, beeIndices));
 
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
     .texture("cubemap", app.createCubemap({
@@ -93,6 +133,16 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
         posY: await loadTexture(cubemapPaths[currentCubemap].py),
         negZ: await loadTexture(cubemapPaths[currentCubemap].nz),
         posZ: await loadTexture(cubemapPaths[currentCubemap].pz)
+    }));
+
+const tex = await loadTexture("ice.jpg");
+let beeDrawCall = app.createDrawCall(beeProgram, beeArray)
+    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
+        magFilter: PicoGL.LINEAR,
+        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
+        maxAnisotropy: 10,
+        wrapS: PicoGL.REPEAT,
+        wrapT: PicoGL.REPEAT
     }));
 
 let projMatrix = mat4.create();
@@ -131,6 +181,14 @@ function draw(timems) {
 
     skyboxDrawCall.uniform("viewProjectionInverse", skyboxViewProjectionInverse);
     skyboxDrawCall.draw();
+
+    mat4.identity(modelMatrix);
+    mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
+
+    app.enable(PicoGL.DEPTH_TEST);
+    app.enable(PicoGL.CULL_FACE);
+    beeDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
+    beeDrawCall.draw();
 
     requestAnimationFrame(draw);
 }
