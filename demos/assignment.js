@@ -1,9 +1,9 @@
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
-import { mat4, vec3, vec4 } from "../node_modules/gl-matrix/esm/index.js";
+import { mat4, vec3, vec4, mat3 } from "../node_modules/gl-matrix/esm/index.js";
 
 import { positions as planePositions, indices as planeIndices } from "../blender/plane.js";
 import { positions as octopusPositions, uvs as octopusUvs, indices as octopusIndices } from "../blender/octopus.js";
-import { positions as teapotPositions, uvs as teapotUvs, indices as teapotIndices } from "../blender/teapot.js";
+import { positions as teapotPositions, uvs as teapotUvs, indices as teapotIndices, normals as teapotNormals } from "../blender/teapot.js";
 
 // language=GLSL
 let skyboxFragmentShader = `
@@ -51,6 +51,7 @@ let teapotFragmentShader = `
     {        
         vec3 reflectedDir = reflect(viewDir, normalize(vNormal));
         outColor = texture(cubemap, reflectedDir);
+        outColor.a = 0.5;
         
         // Try using a higher mipmap LOD to get a rough material effect without any performance impact
         // outColor = textureLod(cubemap, reflectedDir, 7.0);
@@ -114,12 +115,13 @@ let octopusVertexShader = `
     
     void main()
     {
-        gl_Position = modelViewProjectionMatrix * vec4(position * 0.5, 1.0);           
+        gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);           
         v_uv = uv;
     }
 `;
 
-let currentCubemap = "cellar";
+let currentCubemap = "whale";
+
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
@@ -161,9 +163,11 @@ const cubemapPaths = {
 
 }
 
+let cubemapCurrent = await setCubemapImage(currentCubemap);
+
 let skyboxProgram = app.createProgram(skyboxVertexShader.trim(), skyboxFragmentShader.trim());
 let octopusProgram = app.createProgram(octopusVertexShader.trim(), octopusFragmentShader.trim());
-let teapotProgram = app.createProgram(octopusVertexShader.trim(), teapotFragmentShader.trim());
+let teapotProgram = app.createProgram(teapotVertexShader.trim(), teapotFragmentShader.trim());
 
 let skyboxArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions))
@@ -176,18 +180,11 @@ let octopusArray = app.createVertexArray()
 
 let teapotArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, teapotPositions))
+    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, teapotNormals))
     .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, teapotUvs))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, teapotIndices));
 
-let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
-    .texture("cubemap", app.createCubemap({
-        negX: await loadTexture(cubemapPaths[currentCubemap].nx),
-        posX: await loadTexture(cubemapPaths[currentCubemap].px),
-        negY: await loadTexture(cubemapPaths[currentCubemap].ny),
-        posY: await loadTexture(cubemapPaths[currentCubemap].py),
-        negZ: await loadTexture(cubemapPaths[currentCubemap].nz),
-        posZ: await loadTexture(cubemapPaths[currentCubemap].pz)
-    }));
+let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray);
 
 const tex = await loadTexture("ice.jpg");
 let octopusDrawCall = app.createDrawCall(octopusProgram, octopusArray)
@@ -211,12 +208,12 @@ let rotateXMatrix = mat4.create();
 let rotateYMatrix = mat4.create();
 let skyboxViewProjectionInverse = mat4.create();
 
-function draw(timems) {
+async function draw(timems) {
     let time = timems * 0.001;
 
-    mat4.perspective(projMatrix, Math.PI / 2, app.width / app.height, 0.1, 100.0);
-    let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
-    mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+    mat4.perspective(projMatrix, Math.PI * 0.3, app.width / app.height, 0.1, 100.0);
+    let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 2.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
+    mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 1, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
     mat4.fromXRotation(rotateXMatrix, time * 0.1136);
@@ -235,20 +232,43 @@ function draw(timems) {
     app.disable(PicoGL.DEPTH_TEST);
     app.disable(PicoGL.CULL_FACE);
 
+    skyboxDrawCall.texture("cubemap", cubemapCurrent);
     skyboxDrawCall.uniform("viewProjectionInverse", skyboxViewProjectionInverse);
     skyboxDrawCall.draw();
 
     mat4.identity(modelMatrix);
+    mat4.scale(modelMatrix, modelMatrix, [0.5, 0.5, 0.5])
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
 
     app.enable(PicoGL.DEPTH_TEST);
-    app.enable(PicoGL.CULL_FACE);
+    app.disable(PicoGL.CULL_FACE);
     octopusDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     octopusDrawCall.draw();
 
+    
+    teapotDrawCall.texture("cubemap", cubemapCurrent);
+    teapotDrawCall.uniform("cameraPosition", camPos);
+    teapotDrawCall.uniform("modelMatrix", modelMatrix);
+    teapotDrawCall.uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
     teapotDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     teapotDrawCall.draw();
+    app.disable(PicoGL.BLEND);
 
     requestAnimationFrame(draw);
 }
 requestAnimationFrame(draw);
+
+async function setCubemapImage(currentCubemap) {
+    let path = cubemapPaths[currentCubemap];
+
+    let cubemap = app.createCubemap({
+        negX: await loadTexture(path.nx),
+        posX: await loadTexture(path.px),
+        negY: await loadTexture(path.ny),
+        posY: await loadTexture(path.py),
+        negZ: await loadTexture(path.nz),
+        posZ: await loadTexture(path.pz)
+    });
+
+    return cubemap;
+}
