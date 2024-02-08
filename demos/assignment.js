@@ -2,7 +2,8 @@ import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import { mat4, vec3, vec4 } from "../node_modules/gl-matrix/esm/index.js";
 
 import { positions as planePositions, indices as planeIndices } from "../blender/plane.js";
-import { positions as beePositions, uvs as beeUvs, indices as beeIndices } from "../blender/bee.js";
+import { positions as octopusPositions, uvs as octopusUvs, indices as octopusIndices } from "../blender/octopus.js";
+import { positions as teapotPositions, uvs as teapotUvs, indices as teapotIndices } from "../blender/teapot.js";
 
 // language=GLSL
 let skyboxFragmentShader = `
@@ -35,8 +36,55 @@ let skyboxVertexShader = `
     }
 `;
 
+let teapotFragmentShader = `
+    #version 300 es
+    precision highp float;
+
+    uniform samplerCube cubemap;    
+        
+    in vec3 vNormal;
+    in vec3 viewDir;
+
+    out vec4 outColor;
+
+    void main()
+    {        
+        vec3 reflectedDir = reflect(viewDir, normalize(vNormal));
+        outColor = texture(cubemap, reflectedDir);
+        
+        // Try using a higher mipmap LOD to get a rough material effect without any performance impact
+        // outColor = textureLod(cubemap, reflectedDir, 7.0);
+    }
+`;
+
 // language=GLSL
-let beeFragmentShader = `
+let teapotVertexShader = `
+    #version 300 es
+            
+    uniform mat4 modelViewProjectionMatrix;
+    uniform mat4 modelMatrix;
+    uniform mat3 normalMatrix;
+    uniform vec3 cameraPosition;
+    
+    layout(location=0) in vec4 position;
+    layout(location=1) in vec3 normal;
+    layout(location=2) in vec2 uv;
+        
+    out vec2 vUv;
+    out vec3 vNormal;
+    out vec3 viewDir;
+    
+    void main()
+    {
+        gl_Position = modelViewProjectionMatrix * position;           
+        vUv = uv;
+        viewDir = (modelMatrix * position).xyz - cameraPosition;                
+        vNormal = normalMatrix * normal;
+    }
+`;
+
+// language=GLSL
+let octopusFragmentShader = `
     #version 300 es
     precision highp float;
     
@@ -53,7 +101,7 @@ let beeFragmentShader = `
 `;
 
 // language=GLSL
-let beeVertexShader = `
+let octopusVertexShader = `
     #version 300 es
             
     uniform mat4 modelViewProjectionMatrix;
@@ -66,12 +114,12 @@ let beeVertexShader = `
     
     void main()
     {
-        gl_Position = modelViewProjectionMatrix * vec4(position * 0.01, 1.0);           
+        gl_Position = modelViewProjectionMatrix * vec4(position * 0.5, 1.0);           
         v_uv = uv;
     }
 `;
 
-let currentCubemap = "tunnel";
+let currentCubemap = "cellar";
 
 async function loadTexture(fileName) {
     return await createImageBitmap(await (await fetch("images/" + fileName)).blob());
@@ -114,16 +162,22 @@ const cubemapPaths = {
 }
 
 let skyboxProgram = app.createProgram(skyboxVertexShader.trim(), skyboxFragmentShader.trim());
-let beeProgram = app.createProgram(beeVertexShader.trim(), beeFragmentShader.trim());
+let octopusProgram = app.createProgram(octopusVertexShader.trim(), octopusFragmentShader.trim());
+let teapotProgram = app.createProgram(octopusVertexShader.trim(), teapotFragmentShader.trim());
 
 let skyboxArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, planeIndices));
 
-let beeArray = app.createVertexArray()
-    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, beePositions))
-    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, beeUvs))
-    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, beeIndices));
+let octopusArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, octopusPositions))
+    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, octopusUvs))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, octopusIndices));
+
+let teapotArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, teapotPositions))
+    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, teapotUvs))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, teapotIndices));
 
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
     .texture("cubemap", app.createCubemap({
@@ -136,7 +190,7 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
     }));
 
 const tex = await loadTexture("ice.jpg");
-let beeDrawCall = app.createDrawCall(beeProgram, beeArray)
+let octopusDrawCall = app.createDrawCall(octopusProgram, octopusArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
         magFilter: PicoGL.LINEAR,
         minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
@@ -144,6 +198,8 @@ let beeDrawCall = app.createDrawCall(beeProgram, beeArray)
         wrapS: PicoGL.REPEAT,
         wrapT: PicoGL.REPEAT
     }));
+
+let teapotDrawCall = app.createDrawCall(teapotProgram, teapotArray);
 
 let projMatrix = mat4.create();
 let viewMatrix = mat4.create();
@@ -187,8 +243,11 @@ function draw(timems) {
 
     app.enable(PicoGL.DEPTH_TEST);
     app.enable(PicoGL.CULL_FACE);
-    beeDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
-    beeDrawCall.draw();
+    octopusDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
+    octopusDrawCall.draw();
+
+    teapotDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
+    teapotDrawCall.draw();
 
     requestAnimationFrame(draw);
 }
