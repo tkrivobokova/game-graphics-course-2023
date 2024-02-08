@@ -82,8 +82,6 @@ let skyboxArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, planeIndices));
 
-let skyboxViewProjectionInverse = mat4.create();
-
 console.log("Current cubemap:", currentCubemap);
 console.log("cubemapPaths[currentCubemap]:", cubemapPaths[currentCubemap]);
 
@@ -96,10 +94,40 @@ let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray)
         negZ: await loadTexture(cubemapPaths[currentCubemap].nz),
         posZ: await loadTexture(cubemapPaths[currentCubemap].pz)
     }));
-    
+
+let projMatrix = mat4.create();
+let viewMatrix = mat4.create();
+let viewProjMatrix = mat4.create();
+let modelMatrix = mat4.create();
+let modelViewMatrix = mat4.create();
+let modelViewProjectionMatrix = mat4.create();
+let rotateXMatrix = mat4.create();
+let rotateYMatrix = mat4.create();
+let skyboxViewProjectionInverse = mat4.create();
 
 function draw(timems) {
-    let time = timems / 1000;
+    let time = timems * 0.001;
+
+    mat4.perspective(projMatrix, Math.PI / 2, app.width / app.height, 0.1, 100.0);
+    let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 0.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
+    mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+    mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
+
+    mat4.fromXRotation(rotateXMatrix, time * 0.1136);
+    mat4.fromZRotation(rotateYMatrix, time * 0.2235);
+    mat4.multiply(modelMatrix, rotateXMatrix, rotateYMatrix);
+
+    mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
+    mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
+
+    let skyboxViewProjectionMatrix = mat4.create();
+    mat4.mul(skyboxViewProjectionMatrix, projMatrix, viewMatrix);
+    mat4.invert(skyboxViewProjectionInverse, skyboxViewProjectionMatrix);
+
+    app.clear();
+
+    app.disable(PicoGL.DEPTH_TEST);
+    app.disable(PicoGL.CULL_FACE);
 
     skyboxDrawCall.uniform("viewProjectionInverse", skyboxViewProjectionInverse);
     skyboxDrawCall.draw();
