@@ -159,7 +159,7 @@ let mirrorArray = app.createVertexArray()
     .indexBuffer(planeIndicesBuffer);
 
 // Change the reflection texture resolution to checkout the difference
-let reflectionResolutionFactor = 0.4;
+let reflectionResolutionFactor = 0.8;
 let reflectionColorTarget = app.createTexture2D(app.width * reflectionResolutionFactor, app.height * reflectionResolutionFactor, { magFilter: PicoGL.LINEAR });
 let reflectionDepthTarget = app.createTexture2D(app.width * reflectionResolutionFactor, app.height * reflectionResolutionFactor, { internalFormat: PicoGL.DEPTH_COMPONENT16 });
 let reflectionBuffer = app.createFramebuffer().colorTarget(0, reflectionColorTarget).depthTarget(reflectionDepthTarget);
@@ -304,7 +304,7 @@ function draw(timems) {
     mat4.fromZRotation(rotateYMatrix, time * 0.2235);
     mat4.mul(modelMatrix, rotateXMatrix, rotateYMatrix);
     mat4.rotateX(modelMatrix, modelMatrix, Math.PI / -2);
-    mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(0.5, 0.5, 0.5));
+    mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(0.7, 0.7, 0.7));
 
     mat4.fromXRotation(rotateXMatrix, Math.PI / 2);
     mat4.fromYRotation(rotateYMatrix, time * 0.2354);
