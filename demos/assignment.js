@@ -186,12 +186,12 @@ let teapotArray = app.createVertexArray()
 
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray);
 
-const tex = await loadTexture("ice.jpg");
+const tex = await loadTexture("octopus_skin.jpg");
 let octopusDrawCall = app.createDrawCall(octopusProgram, octopusArray)
     .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
-        magFilter: PicoGL.LINEAR,
-        minFilter: PicoGL.LINEAR_MIPMAP_LINEAR,
-        maxAnisotropy: 10,
+        magFilter: PicoGL.NEAREST,
+        minFilter: PicoGL.LINEAR_MIPMAP_NEAREST,
+        maxAnisotropy: 15,
         wrapS: PicoGL.REPEAT,
         wrapT: PicoGL.REPEAT
     }));
