@@ -2,7 +2,7 @@ import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import { mat4, vec3, vec4, mat3 } from "../node_modules/gl-matrix/esm/index.js";
 
 import { positions as planePositions, indices as planeIndices } from "../blender/plane.js";
-import { positions as octopusPositions, uvs as octopusUvs, indices as octopusIndices } from "../blender/octopus.js";
+import { positions as octopusPositions, uvs as octopusUvs, indices as octopusIndices, normals as octopusNormals } from "../blender/octopus.js";
 import { positions as teapotPositions, uvs as teapotUvs, indices as teapotIndices, normals as teapotNormals } from "../blender/teapot.js";
 
 let ambientLightColor = vec3.fromValues(0.1, 0.1, 1.0);
@@ -133,18 +133,19 @@ let octopusFragmentShader = `
     #version 300 es
     precision highp float;
     ${lightCalculationShader}
+     
+    uniform sampler2D tex;   
     
-    uniform sampler2D tex;    
-    
-    in vec2 v_uv;
+    in vec2 vUv;
     in vec3 vPosition;    
     in vec3 vNormal;
+    in vec4 vColor; 
     
     out vec4 outColor;
     
     void main()
     {        
-        outColor = calculateLights(texture(tex, v_uv).rgb, normalize(vNormal), vPosition);
+        outColor = calculateLights(texture(tex, vUv).rgb, normalize(vNormal), vPosition);
     }
 `;
 
@@ -155,25 +156,28 @@ let octopusVertexShader = `
               
     uniform mat4 modelViewProjectionMatrix;
     uniform mat4 viewProjectionMatrix;
-    uniform mat4 modelMatrix;     
+    uniform mat4 modelMatrix;    
+    uniform mat3 normalMatrix; 
     
     layout(location=0) in vec3 position;
     layout(location=1) in vec3 normal;
     layout(location=2) in vec2 uv;
         
-    out vec2 v_uv;
+    out vec2 vUv;
     out vec3 vPosition;    
     out vec3 vNormal;
+    out vec4 outColor;  
+    out vec4 vColor;
     
     void main()
     {
-        vec4 worldPosition = modelMatrix * position;
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
 
         vPosition = worldPosition.xyz;        
-        vNormal = (modelMatrix * normal).xyz;
+        vNormal = normalMatrix * normal;
 
-        gl_Position = (modelViewProjectionMatrix * vec4(position, 1.0)) + (viewProjectionMatrix * worldPosition);           
-        v_uv = uv;
+        gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);           
+        vUv = uv;
     }
 `;
 
@@ -232,6 +236,7 @@ let skyboxArray = app.createVertexArray()
 
 let octopusArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, octopusPositions))
+    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, octopusNormals))
     .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, octopusUvs))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, octopusIndices));
 
@@ -242,8 +247,6 @@ let teapotArray = app.createVertexArray()
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, teapotIndices));
 
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray);
-
-
 
 let teapotDrawCall = app.createDrawCall(teapotProgram, teapotArray);
 
@@ -304,9 +307,6 @@ async function draw(timems) {
         colorsBuffer.set(pointLightColors[i], i * 3);
     }
 
-    teapotDrawCall.uniform("lightPositions[0]", positionsBuffer);
-    teapotDrawCall.uniform("lightColors[0]", colorsBuffer);
-
     app.disable(PicoGL.DEPTH_TEST);
     app.disable(PicoGL.CULL_FACE);
 
@@ -320,7 +320,8 @@ async function draw(timems) {
 
     app.enable(PicoGL.DEPTH_TEST);
     app.disable(PicoGL.CULL_FACE);
-    octopusDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
+    octopusDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix)
+        .uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
     octopusDrawCall.draw();
 
     app.enable(PicoGL.BLEND);
