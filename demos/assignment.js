@@ -5,6 +5,50 @@ import { positions as planePositions, indices as planeIndices } from "../blender
 import { positions as octopusPositions, uvs as octopusUvs, indices as octopusIndices } from "../blender/octopus.js";
 import { positions as teapotPositions, uvs as teapotUvs, indices as teapotIndices, normals as teapotNormals } from "../blender/teapot.js";
 
+let ambientLightColor = vec3.fromValues(0.1, 0.1, 1.0);
+let numberOfPointLights = 2;
+let pointLightColors = [vec3.fromValues(1.0, 1.0, 1.0), vec3.fromValues(0.02, 0.4, 0.5)];
+let pointLightInitialPositions = [vec3.fromValues(5, 0, 2), vec3.fromValues(-5, 0, 2)];
+let pointLightPositions = [vec3.create(), vec3.create()];
+
+// language=GLSL
+let lightCalculationShader = `
+    uniform vec3 cameraPosition;
+    uniform vec3 baseColor;    
+
+    uniform vec3 ambientLightColor;    
+    uniform vec3 lightColors[${numberOfPointLights}];        
+    uniform vec3 lightPositions[${numberOfPointLights}];
+    
+    // This function calculates light reflection using Phong reflection model (ambient + diffuse + specular)
+    vec4 calculateLights(vec3 baseColor, vec3 normal, vec3 position) {
+        float ambientIntensity = 0.5;
+        float diffuseIntensity = 1.0;
+        float specularIntensity = 2.0;
+        float specularPower = 100.0;
+        float metalness = 0.0;
+
+        vec3 viewDirection = normalize(cameraPosition.xyz - position);
+        vec3 color = baseColor * ambientLightColor * ambientIntensity;
+                
+        for (int i = 0; i < lightPositions.length(); i++) {
+            vec3 lightDirection = normalize(lightPositions[i] - position);
+            
+            // Lambertian reflection (ideal diffuse of matte surfaces) is also a part of Phong model                        
+            float diffuse = max(dot(lightDirection, normal), 0.0);                                    
+            color += baseColor * lightColors[i] * diffuse * diffuseIntensity;
+                      
+            // Phong specular highlight 
+            float specular = pow(max(dot(viewDirection, reflect(-lightDirection, normal)), 0.0), specularPower);
+            
+            // Blinn-Phong improved specular highlight
+            // float specular = pow(max(dot(normalize(lightDirection + viewDirection), normal), 0.0), specularPower);
+            color += mix(vec3(1.0), baseColor, metalness) * lightColors[i] * specular * specularIntensity;
+        }
+        return vec4(color, 1.0);
+    }
+`;
+
 // language=GLSL
 let skyboxFragmentShader = `
     #version 300 es
@@ -88,34 +132,47 @@ let teapotVertexShader = `
 let octopusFragmentShader = `
     #version 300 es
     precision highp float;
+    ${lightCalculationShader}
     
     uniform sampler2D tex;    
     
     in vec2 v_uv;
+    in vec3 vPosition;    
+    in vec3 vNormal;
     
     out vec4 outColor;
     
     void main()
     {        
-        outColor = texture(tex, v_uv);
+        outColor = calculateLights(texture(tex, v_uv).rgb, normalize(vNormal), vPosition);
     }
 `;
 
 // language=GLSL
 let octopusVertexShader = `
     #version 300 es
-            
+    ${lightCalculationShader}
+              
     uniform mat4 modelViewProjectionMatrix;
+    uniform mat4 viewProjectionMatrix;
+    uniform mat4 modelMatrix;     
     
     layout(location=0) in vec3 position;
     layout(location=1) in vec3 normal;
     layout(location=2) in vec2 uv;
         
     out vec2 v_uv;
+    out vec3 vPosition;    
+    out vec3 vNormal;
     
     void main()
     {
-        gl_Position = modelViewProjectionMatrix * vec4(position, 1.0);           
+        vec4 worldPosition = modelMatrix * position;
+
+        vPosition = worldPosition.xyz;        
+        vNormal = (modelMatrix * normal).xyz;
+
+        gl_Position = (modelViewProjectionMatrix * vec4(position, 1.0)) + (viewProjectionMatrix * worldPosition);           
         v_uv = uv;
     }
 `;
@@ -186,15 +243,7 @@ let teapotArray = app.createVertexArray()
 
 let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray);
 
-const tex = await loadTexture("octopus_skin.jpg");
-let octopusDrawCall = app.createDrawCall(octopusProgram, octopusArray)
-    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
-        magFilter: PicoGL.NEAREST,
-        minFilter: PicoGL.LINEAR_MIPMAP_NEAREST,
-        maxAnisotropy: 15,
-        wrapS: PicoGL.REPEAT,
-        wrapT: PicoGL.REPEAT
-    }));
+
 
 let teapotDrawCall = app.createDrawCall(teapotProgram, teapotArray);
 
@@ -207,12 +256,32 @@ let modelViewProjectionMatrix = mat4.create();
 let rotateXMatrix = mat4.create();
 let rotateYMatrix = mat4.create();
 let skyboxViewProjectionInverse = mat4.create();
+let camPos = vec3.create();
+
+const positionsBuffer = new Float32Array(numberOfPointLights * 3);
+const colorsBuffer = new Float32Array(numberOfPointLights * 3);
+
+const tex = await loadTexture("octopus_skin.jpg");
+let octopusDrawCall = app.createDrawCall(octopusProgram, octopusArray)
+    .texture("tex", app.createTexture2D(tex, tex.width, tex.height, {
+        magFilter: PicoGL.NEAREST,
+        minFilter: PicoGL.LINEAR_MIPMAP_NEAREST,
+        maxAnisotropy: 15,
+        wrapS: PicoGL.REPEAT,
+        wrapT: PicoGL.REPEAT
+    }))
+    .uniform("viewProjectionMatrix", viewProjMatrix)
+    .uniform("modelMatrix", modelMatrix)
+    .uniform("cameraPosition", camPos)
+    .uniform("lightPositions[0]", positionsBuffer)
+    .uniform("ambientLightColor", ambientLightColor)
+    .uniform("lightColors[0]", colorsBuffer);
 
 async function draw(timems) {
     let time = timems * 0.001;
 
     mat4.perspective(projMatrix, Math.PI * 0.3, app.width / app.height, 0.1, 100.0);
-    let camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 2.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
+    camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 2.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
     mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 1, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
@@ -228,6 +297,15 @@ async function draw(timems) {
     mat4.invert(skyboxViewProjectionInverse, skyboxViewProjectionMatrix);
 
     app.clear();
+
+    for (let i = 0; i < numberOfPointLights; i++) {
+        vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
+        positionsBuffer.set(pointLightPositions[i], i * 3);
+        colorsBuffer.set(pointLightColors[i], i * 3);
+    }
+
+    teapotDrawCall.uniform("lightPositions[0]", positionsBuffer);
+    teapotDrawCall.uniform("lightColors[0]", colorsBuffer);
 
     app.disable(PicoGL.DEPTH_TEST);
     app.disable(PicoGL.CULL_FACE);
