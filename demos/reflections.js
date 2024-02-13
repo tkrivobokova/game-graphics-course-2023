@@ -196,13 +196,13 @@ let mirrorProgram = app.createProgram(mirrorVertexShader, mirrorFragmentShader);
 let torusVertexArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, torusPositions))
     .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, torusNormals))
-    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 3, torusUvs))
+    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, torusUvs))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, torusIndices));
 
 let cubeVertexArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, cubePositions))
     .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, cubeNormals))
-    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 3, torusUvs))
+    .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, cubeUvs))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, cubeIndices));
 
 const planePositionsBuffer = app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions);
