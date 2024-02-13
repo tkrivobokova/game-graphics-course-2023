@@ -36,7 +36,7 @@ let fragmentShader = `
         
         float diffuse = max(dot(lightDirection, normal), 0.0) * max(shadow, 0.2);        
         float specular = shadow * pow(max(dot(reflectionDirection, eyeDirection), 0.0), 100.0) * 0.7;
-                fragColor = vec4(diffuse * baseColor.rgb + ambientColor.rgb + specular, baseColor.a);
+        fragColor = vec4(diffuse * baseColor.rgb + ambientColor.rgb + specular, baseColor.a);
     }
 `;
 
@@ -116,7 +116,7 @@ let puffVertexArray = app.createVertexArray()
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, puffIndices));
 
 // Change the shadow texture resolution to checkout the difference
-let shadowDepthTarget = app.createTexture2D(512, 512, {
+let shadowDepthTarget = app.createTexture2D(10000, 10000, {
     internalFormat: PicoGL.DEPTH_COMPONENT16,
     compareMode: PicoGL.COMPARE_REF_TO_TEXTURE,
     magFilter: PicoGL.LINEAR,
@@ -185,7 +185,7 @@ function renderShadowMap() {
     app.gl.cullFace(app.gl.FRONT);
 
     // Projection and view matrices are changed to render objects from the point view of light source
-    mat4.perspective(projMatrix, Math.PI * 0.1, shadowDepthTarget.width / shadowDepthTarget.height, 0.1, 100.0);
+    mat4.perspective(projMatrix, Math.PI * 0.4, shadowDepthTarget.width / shadowDepthTarget.height, 0.1, 100.0);
     mat4.multiply(lightViewProjMatrix, projMatrix, lightViewMatrix);
 
     drawObjects(torusShadowDrawCall, cubeShadowDrawCall, puffShadowDrawCall);
@@ -231,7 +231,7 @@ function draw(timems) {
     mat4.lookAt(viewMatrix, cameraPosition, vec3.fromValues(0, -0.5, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
-    vec3.set(lightPosition, 5, 5, 2.5);
+    vec3.set(lightPosition, Math.sin(time * 5) * 20 + 5, 5, 2.5);
     mat4.lookAt(lightViewMatrix, lightPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
 
     renderShadowMap();
