@@ -3,7 +3,8 @@
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import {mat4, vec3, vec4, quat} from "../node_modules/gl-matrix/esm/index.js";
 
-import {positions, normals, indices} from "../blender/torus.js";
+import {positions as torusPositions, normals as torusNormals, indices as torusIndices} from "../blender/torus.js";
+import {positions as cubePositions, normals as cubeNormals, indices as cubeIndices} from "../blender/cube.js";
 
 // language=GLSL
 let fragmentShader = `
@@ -97,10 +98,15 @@ app.enable(PicoGL.DEPTH_TEST)
 let program = app.createProgram(vertexShader, fragmentShader);
 let shadowProgram = app.createProgram(shadowVertexShader, shadowFragmentShader);
 
-let vertexArray = app.createVertexArray()
-    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, positions))
-    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, normals))
-    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, indices));
+let torusVertexArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, torusPositions))
+    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, torusNormals))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, torusIndices));
+
+let cubeVertexArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, cubePositions))
+    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, cubeNormals))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, cubeIndices));
 
 // Change the shadow texture resolution to checkout the difference
 let shadowDepthTarget = app.createTexture2D(512, 512, {
@@ -127,7 +133,7 @@ let lightPosition = vec3.create();
 let lightViewMatrix = mat4.create();
 let lightViewProjMatrix = mat4.create();
 
-let drawCall = app.createDrawCall(program, vertexArray)
+let torusDrawCall = app.createDrawCall(program, torusVertexArray)
     .uniform("baseColor", fgColor)
     .uniform("ambientColor", vec4.scale(vec4.create(), bgColor, 0.7))
     .uniform("modelMatrix", modelMatrix)
@@ -137,7 +143,20 @@ let drawCall = app.createDrawCall(program, vertexArray)
     .uniform("lightModelViewProjectionMatrix", lightModelViewProjectionMatrix)
     .texture("shadowMap", shadowDepthTarget);
 
-let shadowDrawCall = app.createDrawCall(shadowProgram, vertexArray)
+let cubeDrawCall = app.createDrawCall(program, cubeVertexArray)
+    .uniform("baseColor", fgColor)
+    .uniform("ambientColor", vec4.scale(vec4.create(), bgColor, 0.7))
+    .uniform("modelMatrix", modelMatrix)
+    .uniform("modelViewProjectionMatrix", modelViewProjectionMatrix)
+    .uniform("cameraPosition", cameraPosition)
+    .uniform("lightPosition", lightPosition)
+    .uniform("lightModelViewProjectionMatrix", lightModelViewProjectionMatrix)
+    .texture("shadowMap", shadowDepthTarget);
+
+let torusShadowDrawCall = app.createDrawCall(shadowProgram, torusVertexArray)
+    .uniform("lightModelViewProjectionMatrix", lightModelViewProjectionMatrix);
+
+    let cubeShadowDrawCall = app.createDrawCall(shadowProgram, cubeVertexArray)
     .uniform("lightModelViewProjectionMatrix", lightModelViewProjectionMatrix);
 
 function renderShadowMap() {
@@ -149,14 +168,14 @@ function renderShadowMap() {
     mat4.perspective(projMatrix, Math.PI * 0.1, shadowDepthTarget.width / shadowDepthTarget.height, 0.1, 100.0);
     mat4.multiply(lightViewProjMatrix, projMatrix, lightViewMatrix);
 
-    drawObjects(shadowDrawCall);
+    drawObjects(torusShadowDrawCall, cubeShadowDrawCall);
 
     app.gl.cullFace(app.gl.BACK);
     app.defaultDrawFramebuffer();
     app.defaultViewport();
 }
 
-function drawObjects(dc) {
+function drawObjects(tdc, cdc) {
     app.clear();
 
     // Middle object
@@ -165,15 +184,15 @@ function drawObjects(dc) {
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
     mat4.multiply(lightModelViewProjectionMatrix, lightViewProjMatrix, modelMatrix);
 
-    dc.draw();
+    tdc.draw();
 
     // Large object
     quat.fromEuler(rotation, time * 12, time * 14, 0);
-    mat4.fromRotationTranslationScale(modelMatrix, rotation, vec3.fromValues(-2.4, -2.4, -1.2), [1, 1, 1]);
+    mat4.fromRotationTranslationScale(modelMatrix, rotation, vec3.fromValues(-2.4, -2.4, -1.2), [2, 2, 2]);
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
     mat4.multiply(lightModelViewProjectionMatrix, lightViewProjMatrix, modelMatrix);
 
-    dc.draw();
+    cdc.draw();
 
     // Small object
     quat.fromEuler(rotation, time * 15, time * 17, 0);
@@ -181,7 +200,7 @@ function drawObjects(dc) {
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
     mat4.multiply(lightModelViewProjectionMatrix, lightViewProjMatrix, modelMatrix);
 
-    dc.draw();
+    tdc.draw();
 }
 
 function draw(timems) {
@@ -196,7 +215,7 @@ function draw(timems) {
     mat4.lookAt(lightViewMatrix, lightPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
 
     renderShadowMap();
-    drawObjects(drawCall);
+    drawObjects(torusDrawCall, cubeDrawCall);
 
     requestAnimationFrame(draw);
 }
