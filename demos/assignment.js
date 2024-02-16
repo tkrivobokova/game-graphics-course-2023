@@ -284,7 +284,7 @@ async function draw(timems) {
     let time = timems * 0.001;
 
     mat4.perspective(projMatrix, Math.PI * 0.3, app.width / app.height, 0.1, 100.0);
-    camPos = vec3.rotateY(vec3.create(), vec3.fromValues(0, 2.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
+    camPos = vec3.rotateY(vec3.create(), vec3.fromValues(2, 2.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
     mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 1, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
