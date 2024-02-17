@@ -220,7 +220,7 @@ let fragmentShader = `
     void main() {
         vec3 shadowCoord = (vPositionFromLight.xyz / vPositionFromLight.w) / 2.0 + 0.5;        
         float shadow = texture(shadowMap, shadowCoord);
-        fragColor = vec4(shadow); //vec4(1.0);
+        fragColor = vec4(vec3(0.0), (1.0 - shadow) * 0.6);
     }
 `;
 
@@ -380,6 +380,7 @@ function renderShadowMap() {
     mat4.perspective(projMatrix, Math.PI * 0.4, shadowDepthTarget.width / shadowDepthTarget.height, 0.1, 100.0);
     mat4.multiply(lightViewProjMatrix, projMatrix, lightViewMatrix);
 
+    app.clear();
     drawObjects(octopusShadowDrawCall, teapotShadowDrawCall);
 
     app.gl.cullFace(app.gl.BACK);
@@ -431,8 +432,7 @@ async function draw(timems) {
     app.clear();
 
     for (let i = 0; i < numberOfPointLights; i++) {
-        // pointLightPositions[i] = vec3.fromValues(0, 10, 1);
-        vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
+        vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), Math.PI * 0.5);
         positionsBuffer.set(pointLightPositions[i], i * 3);
         colorsBuffer.set(pointLightColors[i], i * 3);
     }
@@ -445,7 +445,7 @@ async function draw(timems) {
     skyboxDrawCall.draw();
 
     mat4.identity(modelMatrix);
-    mat4.scale(modelMatrix, modelMatrix, [0.5, 0.5, 0.5])
+    mat4.scale(modelMatrix, modelMatrix, [0.5, 0.5, 0.5]);
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
 
 
@@ -453,16 +453,20 @@ async function draw(timems) {
     drawObjects(octopusDrawCall, teapotDrawCall);
 
     mat4.identity(modelMatrix);
-    mat4.fromTranslation(modelMatrix, [0, -1, 0]);
-    mat4.scale(modelMatrix, modelMatrix, [3,3,3]);
+    mat4.fromTranslation(modelMatrix, [0, -2, 0]);
+    mat4.scale(modelMatrix, modelMatrix, [5,5,5]);
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
+    mat4.multiply(lightModelViewProjectionMatrix, lightViewProjMatrix, modelMatrix);
 
+    app.enable(PicoGL.BLEND);
+    app.blendFunc(PicoGL.ONE, PicoGL.ONE_MINUS_SRC_ALPHA);
     planeDrawCall.uniform("modelMatrix", modelMatrix);
     planeDrawCall.uniform("lightModelViewProjectionMatrix", lightModelViewProjectionMatrix);
     planeDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
     planeDrawCall.texture("shadowMap", shadowDepthTarget);
 
     planeDrawCall.draw();
+    app.disable(PicoGL.BLEND);
 
 
     requestAnimationFrame(draw);
