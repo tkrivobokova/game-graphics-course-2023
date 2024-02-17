@@ -1,7 +1,7 @@
 import PicoGL from "../node_modules/picogl/build/module/picogl.js";
 import { mat4, vec3, vec4, mat3 } from "../node_modules/gl-matrix/esm/index.js";
 
-import { positions as planePositions, indices as planeIndices } from "../blender/plane.js";
+import { positions as planePositions, indices as planeIndices, normals as planeNormals } from "../blender/plane.js";
 import { positions as octopusPositions, uvs as octopusUvs, indices as octopusIndices, normals as octopusNormals } from "../blender/octopus.js";
 import { positions as teapotPositions, uvs as teapotUvs, indices as teapotIndices, normals as teapotNormals } from "../blender/teapot.js";
 
@@ -181,7 +181,69 @@ let octopusVertexShader = `
     }
 `;
 
-let currentCubemap = "whale";
+// language=GLSL
+let shadowFragmentShader = `
+    #version 300 es
+    precision highp float;
+    
+    out vec4 fragColor;
+    
+    void main() {
+        // Uncomment to see the depth buffer of the shadow map    
+        fragColor = vec4((gl_FragCoord.z - 0.98) * 50.0);    
+    }
+`;
+
+// language=GLSL
+let shadowVertexShader = `
+    #version 300 es
+    layout(location=0) in vec4 position;
+    uniform mat4 lightModelViewProjectionMatrix;
+    
+    void main() {
+        gl_Position = lightModelViewProjectionMatrix * position;
+    }
+`;
+
+// language=GLSL
+let fragmentShader = `
+    #version 300 es    
+    precision highp float;    
+    precision highp sampler2DShadow;
+    
+    uniform sampler2DShadow shadowMap;
+    
+    in vec4 vPositionFromLight;
+
+    out vec4 fragColor;
+        
+    void main() {
+        vec3 shadowCoord = (vPositionFromLight.xyz / vPositionFromLight.w) / 2.0 + 0.5;        
+        float shadow = texture(shadowMap, shadowCoord);
+        fragColor = vec4(shadow); //vec4(1.0);
+    }
+`;
+
+// language=GLSL
+let vertexShader = `
+    #version 300 es
+    
+    layout(location=0) in vec4 position;
+    layout(location=1) in vec3 normal;
+        
+    uniform mat4 modelMatrix;
+    uniform mat4 modelViewProjectionMatrix;
+    uniform mat4 lightModelViewProjectionMatrix;
+    
+    out vec4 vPositionFromLight;
+        
+    void main() {
+        gl_Position = modelViewProjectionMatrix * position;
+        vPositionFromLight = lightModelViewProjectionMatrix * position;
+    }
+`;
+
+let currentCubemap = "tunnel";
 
 
 async function loadTexture(fileName) {
@@ -229,6 +291,8 @@ let cubemapCurrent = await setCubemapImage(currentCubemap);
 let skyboxProgram = app.createProgram(skyboxVertexShader.trim(), skyboxFragmentShader.trim());
 let octopusProgram = app.createProgram(octopusVertexShader.trim(), octopusFragmentShader.trim());
 let teapotProgram = app.createProgram(teapotVertexShader.trim(), teapotFragmentShader.trim());
+let shadowProgram = app.createProgram(shadowVertexShader.trim(), shadowFragmentShader.trim());
+let planeProgram = app.createProgram(vertexShader.trim(), fragmentShader.trim());
 
 let skyboxArray = app.createVertexArray()
     .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions))
@@ -246,9 +310,20 @@ let teapotArray = app.createVertexArray()
     .vertexAttributeBuffer(2, app.createVertexBuffer(PicoGL.FLOAT, 2, teapotUvs))
     .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, teapotIndices));
 
-let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray);
+let planeArray = app.createVertexArray()
+    .vertexAttributeBuffer(0, app.createVertexBuffer(PicoGL.FLOAT, 3, planePositions))
+    .vertexAttributeBuffer(1, app.createVertexBuffer(PicoGL.FLOAT, 3, planeNormals))
+    .indexBuffer(app.createIndexBuffer(PicoGL.UNSIGNED_INT, 3, planeIndices));
 
-let teapotDrawCall = app.createDrawCall(teapotProgram, teapotArray);
+let shadowDepthTarget = app.createTexture2D(512, 512, {
+    internalFormat: PicoGL.DEPTH_COMPONENT16,
+    compareMode: PicoGL.COMPARE_REF_TO_TEXTURE,
+    magFilter: PicoGL.LINEAR,
+    minFilter: PicoGL.LINEAR,
+    wrapS: PicoGL.CLAMP_TO_EDGE,
+    wrapT: PicoGL.CLAMP_TO_EDGE
+});
+let shadowBuffer = app.createFramebuffer().depthTarget(shadowDepthTarget);
 
 let projMatrix = mat4.create();
 let viewMatrix = mat4.create();
@@ -260,6 +335,21 @@ let rotateXMatrix = mat4.create();
 let rotateYMatrix = mat4.create();
 let skyboxViewProjectionInverse = mat4.create();
 let camPos = vec3.create();
+let lightModelViewProjectionMatrix = mat4.create();
+let lightViewProjMatrix = mat4.create();
+let lightViewMatrix = mat4.create();
+
+let skyboxDrawCall = app.createDrawCall(skyboxProgram, skyboxArray);
+
+let teapotDrawCall = app.createDrawCall(teapotProgram, teapotArray);
+
+let planeDrawCall = app.createDrawCall(planeProgram, planeArray);
+
+let octopusShadowDrawCall = app.createDrawCall(shadowProgram, octopusArray)
+    .uniform("lightModelViewProjectionMatrix", lightModelViewProjectionMatrix);
+
+let teapotShadowDrawCall = app.createDrawCall(shadowProgram, teapotArray)
+    .uniform("lightModelViewProjectionMatrix", lightModelViewProjectionMatrix);
 
 const positionsBuffer = new Float32Array(numberOfPointLights * 3);
 const colorsBuffer = new Float32Array(numberOfPointLights * 3);
@@ -280,11 +370,50 @@ let octopusDrawCall = app.createDrawCall(octopusProgram, octopusArray)
     .uniform("ambientLightColor", ambientLightColor)
     .uniform("lightColors[0]", colorsBuffer);
 
+function renderShadowMap() {
+    app.drawFramebuffer(shadowBuffer);
+    app.viewport(0, 0, shadowDepthTarget.width, shadowDepthTarget.height);
+    app.gl.cullFace(app.gl.FRONT);
+
+    // Projection and view matrices are changed to render objects from the point view of light source
+    mat4.lookAt(lightViewMatrix, pointLightPositions[0], vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+    mat4.perspective(projMatrix, Math.PI * 0.4, shadowDepthTarget.width / shadowDepthTarget.height, 0.1, 100.0);
+    mat4.multiply(lightViewProjMatrix, projMatrix, lightViewMatrix);
+
+    drawObjects(octopusShadowDrawCall, teapotShadowDrawCall);
+
+    app.gl.cullFace(app.gl.BACK);
+    app.defaultDrawFramebuffer();
+    app.defaultViewport();
+}
+
+function drawObjects(odc, tdc) {
+    app.enable(PicoGL.DEPTH_TEST);
+    app.disable(PicoGL.CULL_FACE);
+    odc.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix)
+        .uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
+
+    mat4.multiply(lightModelViewProjectionMatrix, lightViewProjMatrix, modelMatrix);
+    odc.draw();
+
+    app.enable(PicoGL.BLEND);
+    app.blendFunc(PicoGL.ONE, PicoGL.ONE_MINUS_SRC_ALPHA);
+    tdc.texture("cubemap", cubemapCurrent);
+    tdc.uniform("cameraPosition", camPos);
+    tdc.uniform("modelMatrix", modelMatrix);
+    tdc.uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
+    tdc.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
+
+    mat4.multiply(lightModelViewProjectionMatrix, lightViewProjMatrix, modelMatrix);
+    tdc.draw();
+    app.disable(PicoGL.BLEND);
+}
+
 async function draw(timems) {
     let time = timems * 0.001;
 
     mat4.perspective(projMatrix, Math.PI * 0.3, app.width / app.height, 0.1, 100.0);
-    camPos = vec3.rotateY(vec3.create(), vec3.fromValues(2, 2.5, 2), vec3.fromValues(0, 0, 0), time * 0.05);
+    camPos = vec3.rotateY(vec3.create(), vec3.fromValues(3, 4, 2), vec3.fromValues(0, 0, 0), time * 0.05);
     mat4.lookAt(viewMatrix, camPos, vec3.fromValues(0, 1, 0), vec3.fromValues(0, 1, 0));
     mat4.multiply(viewProjMatrix, projMatrix, viewMatrix);
 
@@ -302,6 +431,7 @@ async function draw(timems) {
     app.clear();
 
     for (let i = 0; i < numberOfPointLights; i++) {
+        // pointLightPositions[i] = vec3.fromValues(0, 10, 1);
         vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), time);
         positionsBuffer.set(pointLightPositions[i], i * 3);
         colorsBuffer.set(pointLightColors[i], i * 3);
@@ -318,21 +448,22 @@ async function draw(timems) {
     mat4.scale(modelMatrix, modelMatrix, [0.5, 0.5, 0.5])
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
 
-    app.enable(PicoGL.DEPTH_TEST);
-    app.disable(PicoGL.CULL_FACE);
-    octopusDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix)
-        .uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
-    octopusDrawCall.draw();
 
-    app.enable(PicoGL.BLEND);
-    app.blendFunc(PicoGL.ONE, PicoGL.ONE_MINUS_SRC_ALPHA);
-    teapotDrawCall.texture("cubemap", cubemapCurrent);
-    teapotDrawCall.uniform("cameraPosition", camPos);
-    teapotDrawCall.uniform("modelMatrix", modelMatrix);
-    teapotDrawCall.uniform("normalMatrix", mat3.normalFromMat4(mat3.create(), modelMatrix));
-    teapotDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
-    teapotDrawCall.draw();
-    app.disable(PicoGL.BLEND);
+    renderShadowMap();
+    drawObjects(octopusDrawCall, teapotDrawCall);
+
+    mat4.identity(modelMatrix);
+    mat4.fromTranslation(modelMatrix, [0, -1, 0]);
+    mat4.scale(modelMatrix, modelMatrix, [3,3,3]);
+    mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
+
+    planeDrawCall.uniform("modelMatrix", modelMatrix);
+    planeDrawCall.uniform("lightModelViewProjectionMatrix", lightModelViewProjectionMatrix);
+    planeDrawCall.uniform("modelViewProjectionMatrix", modelViewProjectionMatrix);
+    planeDrawCall.texture("shadowMap", shadowDepthTarget);
+
+    planeDrawCall.draw();
+
 
     requestAnimationFrame(draw);
 }
