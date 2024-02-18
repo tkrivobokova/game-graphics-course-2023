@@ -424,7 +424,13 @@ async function draw(timems) {
     app.clear();
 
     for (let i = 0; i < numberOfPointLights; i++) {
-        vec3.rotateZ(pointLightPositions[i], pointLightInitialPositions[i], vec3.fromValues(0, 0, 0), Math.PI * 0.5);
+        let angle = time + i * Math.PI;
+        let radius = 5;
+        let lightX = radius * Math.cos(angle);
+        let lightZ = radius * Math.sin(angle);
+        let lightY = 5;
+
+        vec3.set(pointLightPositions[i], lightX, lightY, lightZ);
         positionsBuffer.set(pointLightPositions[i], i * 3);
         colorsBuffer.set(pointLightColors[i], i * 3);
     }
@@ -446,7 +452,7 @@ async function draw(timems) {
 
     mat4.identity(modelMatrix);
     mat4.fromTranslation(modelMatrix, [0, -2, 0]);
-    mat4.scale(modelMatrix, modelMatrix, [5,5,5]);
+    mat4.scale(modelMatrix, modelMatrix, [25, 3, 25]);
     mat4.multiply(modelViewProjectionMatrix, viewProjMatrix, modelMatrix);
     mat4.multiply(lightModelViewProjectionMatrix, lightViewProjMatrix, modelMatrix);
 
