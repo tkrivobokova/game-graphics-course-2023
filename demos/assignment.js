@@ -243,7 +243,7 @@ let vertexShader = `
     }
 `;
 
-let currentCubemap = "tunnel";
+let currentCubemap = "paris";
 
 
 async function loadTexture(fileName) {
@@ -251,21 +251,13 @@ async function loadTexture(fileName) {
 }
 
 const cubemapPaths = {
-    cellar: {
-        nx: "cellar_nx.png",
-        ny: "cellar_ny.png",
-        nz: "cellar_nz.png",
-        px: "cellar_px.png",
-        py: "cellar_py.png",
-        pz: "cellar_pz.png"
-    },
-    burnt: {
-        nx: "burnt_nx.png",
-        ny: "burnt_ny.png",
-        nz: "burnt_nz.png",
-        px: "burnt_px.png",
-        py: "burnt_py.png",
-        pz: "burnt_pz.png"
+    paris: {
+        nx: "paris_nx.png",
+        ny: "paris_ny.png",
+        nz: "paris_nz.png",
+        px: "paris_px.png",
+        py: "paris_py.png",
+        pz: "paris_pz.png"
     },
     tunnel: {
         nx: "tunnel_nx.png",
@@ -275,13 +267,13 @@ const cubemapPaths = {
         py: "tunnel_py.png",
         pz: "tunnel_pz.png"
     },
-    whale: {
-        nx: "whale_nx.png",
-        ny: "whale_ny.png",
-        nz: "whale_nz.png",
-        px: "whale_px.png",
-        py: "whale_py.png",
-        pz: "whale_pz.png"
+    village: {
+        nx: "village_nx.png",
+        ny: "village_ny.png",
+        nz: "village_nz.png",
+        px: "village_px.png",
+        py: "village_py.png",
+        pz: "village_pz.png"
     }
 
 }
@@ -487,3 +479,15 @@ async function setCubemapImage(currentCubemap) {
 
     return cubemap;
 }
+
+function changeCubemap() {
+    const cubemaps = Object.keys(cubemapPaths);
+    const currentIndex = cubemaps.indexOf(currentCubemap);
+    const nextIndex = (currentIndex + 1) % cubemaps.length;
+    currentCubemap = cubemaps[nextIndex];
+    setCubemapImage(currentCubemap).then(newCubemap => {
+        cubemapCurrent = newCubemap;
+    });
+}
+
+const cubemapInterval = setInterval(changeCubemap, 3000);
