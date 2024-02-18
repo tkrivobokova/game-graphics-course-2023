@@ -18,7 +18,7 @@ let fragmentShader = `
     out vec4 outColor;       
     
     void main() {                      
-        outColor =  + pow(vViewNormal.y, 5.0) + diffuseColor * abs(vViewNormal.y) + ambientColor;
+        outColor =  pow(abs(vViewNormal.y), 5.0) + diffuseColor * abs(vViewNormal.y) + ambientColor;
     }
 `;
 
@@ -89,9 +89,9 @@ let postFragmentShader = `
         float depth = texture(depthTex, screenPosition).r;
         
         // Chromatic aberration 
-        //vec2 caOffset = vec2(0.01, 0.0);
-        //col.r = texture(tex, screenPosition - caOffset).r;
-        //col.b = texture(tex, screenPosition + caOffset).b;
+        // vec2 caOffset = vec2(0.01, 0.0);
+        // col.r = texture(tex, screenPosition - caOffset).r;
+        // col.b = texture(tex, screenPosition + caOffset).b;
         
         // Depth of field
         col = depthOfField(col, depth, screenPosition);
